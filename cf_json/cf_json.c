@@ -1,70 +1,77 @@
 #include <stdbool.h>
 #include "cf_json.h"
 #include "cJSON/cJSON.h"
+
 struct cf_json{
-    cJSON* json;
 };
+
 char* cf_json_print(const struct cf_json* item){
-    if(item == NULL || item->json == NULL)
+    if(item == NULL )
         return NULL;
-    return cJSON_Print(item->json);
+    return cJSON_Print((cJSON*)item);
 }
 int cf_json_print_preallocated(const struct cf_json* item,char *buffer, const int length, const bool format){
-    if(item == NULL || item->json == NULL)
+    if(item == NULL)
         return -1;
-    return cJSON_PrintPreallocated(item->json,buffer,length,format) == 0 ? -1 : 0;
+    return cJSON_PrintPreallocated((cJSON*)item,buffer,length,format) == 0 ? -1 : 0;
 }
 struct cf_json* cf_json_create_object(){
-    struct cf_json* json_obj = NULL;
-    
-    cJSON* json = cJSON_CreateObject();
-    if(json)
-    {
-        json_obj = malloc(sizeof(struct cf_json));
-        if(json_obj)
-            json_obj->json = json;
-        else{
-            cJSON_Delete(json);
-            json = NULL;
-        }
-    }
-    return json_obj;
+    return (struct cf_json*)cJSON_CreateObject();
 }
+void cf_json_delete(struct cf_json* item){
+    cJSON_Delete((cJSON*)item);
+}
+
 struct cf_json* cf_json_create_string(const char *string){
-    struct  cf_json* json_obj = NULL;
-    
-    cJSON* json = cJSON_CreateString(string);
-    if(json){
-        json_obj = malloc(sizeof(struct cf_json));
-        if(json_obj)
-        {
-            json_obj->json = json;
-        }
-        else
-        {
-            cJSON_Delete(json);
-            json = NULL;
-        }
-    }
-    return json_obj;
+    return  (struct cf_json*)cJSON_CreateString(string);
 }
 
-int cf_json_add_item_to_object(struct  cf_json *object, const char *string, cJSON *item){
-    if(object == NULL || object->json == NULL)
+struct  cf_json* cf_json_create_array(){
+    return (struct  cf_json*)cJSON_CreateArray();
+}
+
+struct  cf_json* cf_json_create_string_array(const char *const *strings, int count){
+    return (struct  cf_json*)cJSON_CreateStringArray(strings,count);
+}
+
+struct cf_json* cf_json_create_int_array(const int *numbers, int count){
+    return  (struct cf_json*)cJSON_CreateIntArray(numbers,count);
+}
+
+int cf_json_add_item_to_array(struct  cf_json *array, struct  cf_json *item){
+    return cJSON_AddItemToArray((cJSON*)array,(cJSON*)item) == true ? 0 : -1;
+}
+
+int cf_json_add_item_to_object(struct  cf_json *object, const char *string, struct  cf_json *item){
+    if(object == NULL || item == NULL)
         return -1;
-    return cJSON_AddItemToObject(object->json,string,item) == 1 ? 0 : -1;
+    return cJSON_AddItemToObject((cJSON*)object,string,(cJSON*)item) == 1 ? 0 : -1;
 }
 
-struct  cf_json* cf_json_add_string_to_object(struct  cf_json *object, const char *name, const char * const string){
-    if(object == NULL || object->json == NULL)
-        return -1;
-    return cJSON_AddStringToObject(object->json,name,string) == 1 ? 0 : -1;
+struct  cf_json* cf_json_add_string_to_object(struct  cf_json *object, const char * const name, const char * const string){
+    if(object == NULL )
+        return NULL;
+    return (struct  cf_json*)cJSON_AddStringToObject((cJSON*)object,name,string);
+}
+
+struct  cf_json* cf_json_add_number_to_object(struct cf_json *object, const char * const name, const double number){
+    if(object == NULL )
+        return NULL;
+    return (struct  cf_json*)cJSON_AddNumberToObject((cJSON*)object,name,number);
+}
+
+struct  cf_json* cf_json_add_false_to_object(struct cf_json *object, const char * const name){
+    if(object == NULL )
+        return NULL;
+    return (struct  cf_json*)cJSON_AddFalseToObject((cJSON*)object,name);
 }
 
 
 
 
-
+/**********************************************************************
+ * gcc cf_json.c cJSON/cJSON.c -o cf_json_test
+ * *********************************************************************/
 #ifndef CF_JSON_TEST
 #include <stdio.h>
 #include <stdlib.h>
@@ -215,91 +222,91 @@ static void create_objects(void)
     cf_json_add_item_to_object(root, "name", cf_json_create_string("Jack (\"Bee\") Nimble"));
     cf_json_add_item_to_object(root, "format", fmt = cf_json_create_object());
     cf_json_add_string_to_object(fmt, "type", "rect");
-    cJSON_AddNumberToObject(fmt, "width", 1920);
-    cJSON_AddNumberToObject(fmt, "height", 1080);
-    cJSON_AddFalseToObject (fmt, "interlace");
-    cJSON_AddNumberToObject(fmt, "frame rate", 24);
+    cf_json_add_number_to_object(fmt, "width", 1920);
+    cf_json_add_number_to_object(fmt, "height", 1080);
+    cf_json_add_false_to_object (fmt, "interlace");
+    cf_json_add_number_to_object(fmt, "frame rate", 24);
 
     /* Print to text */
     if (print_preallocated(root) != 0) {
-        cJSON_Delete(root);
+        cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cJSON_Delete(root);
+    cf_json_delete(root);
 
     /* Our "days of the week" array: */
-    root = cJSON_CreateStringArray(strings, 7);
+    root = cf_json_create_string_array(strings, 7);
 
     if (print_preallocated(root) != 0) {
-        cJSON_Delete(root);
+        cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cJSON_Delete(root);
+    cf_json_delete(root);
 
     /* Our matrix: */
-    root = cJSON_CreateArray();
+    root = cf_json_create_array();
     for (i = 0; i < 3; i++)
     {
-        cJSON_AddItemToArray(root, cJSON_CreateIntArray(numbers[i], 3));
+        cf_json_add_item_to_array(root, cf_json_create_int_array(numbers[i], 3));
     }
 
     /* cJSON_ReplaceItemInArray(root, 1, cJSON_CreateString("Replacement")); */
 
     if (print_preallocated(root) != 0) {
-        cJSON_Delete(root);
+        cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cJSON_Delete(root);
+    cf_json_delete(root);
 
     /* Our "gallery" item: */
-    root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "Image", img = cJSON_CreateObject());
-    cJSON_AddNumberToObject(img, "Width", 800);
-    cJSON_AddNumberToObject(img, "Height", 600);
-    cJSON_AddStringToObject(img, "Title", "View from 15th Floor");
-    cJSON_AddItemToObject(img, "Thumbnail", thm = cJSON_CreateObject());
-    cJSON_AddStringToObject(thm, "Url", "http:/*www.example.com/image/481989943");
-    cJSON_AddNumberToObject(thm, "Height", 125);
-    cJSON_AddStringToObject(thm, "Width", "100");
-    cJSON_AddItemToObject(img, "IDs", cJSON_CreateIntArray(ids, 4));
+    root = cf_json_create_object();
+    cf_json_add_item_to_object(root, "Image", img = cf_json_create_object());
+    cf_json_add_number_to_object(img, "Width", 800);
+    cf_json_add_number_to_object(img, "Height", 600);
+    cf_json_add_string_to_object(img, "Title", "View from 15th Floor");
+    cf_json_add_item_to_object(img, "Thumbnail", thm = cf_json_create_object());
+    cf_json_add_string_to_object(thm, "Url", "http:/*www.example.com/image/481989943");
+    cf_json_add_number_to_object(thm, "Height", 125);
+    cf_json_add_string_to_object(thm, "Width", "100");
+    cf_json_add_item_to_object(img, "IDs", cf_json_create_int_array(ids, 4));
 
     if (print_preallocated(root) != 0) {
-        cJSON_Delete(root);
+        cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cJSON_Delete(root);
+    cf_json_delete(root);
 
     /* Our array of "records": */
-    root = cJSON_CreateArray();
+    root = cf_json_create_array();
     for (i = 0; i < 2; i++)
     {
-        cJSON_AddItemToArray(root, fld = cJSON_CreateObject());
-        cJSON_AddStringToObject(fld, "precision", fields[i].precision);
-        cJSON_AddNumberToObject(fld, "Latitude", fields[i].lat);
-        cJSON_AddNumberToObject(fld, "Longitude", fields[i].lon);
-        cJSON_AddStringToObject(fld, "Address", fields[i].address);
-        cJSON_AddStringToObject(fld, "City", fields[i].city);
-        cJSON_AddStringToObject(fld, "State", fields[i].state);
-        cJSON_AddStringToObject(fld, "Zip", fields[i].zip);
-        cJSON_AddStringToObject(fld, "Country", fields[i].country);
+        cf_json_add_item_to_array(root, fld = cf_json_create_object());
+        cf_json_add_string_to_object(fld, "precision", fields[i].precision);
+        cf_json_add_number_to_object(fld, "Latitude", fields[i].lat);
+        cf_json_add_number_to_object(fld, "Longitude", fields[i].lon);
+        cf_json_add_string_to_object(fld, "Address", fields[i].address);
+        cf_json_add_string_to_object(fld, "City", fields[i].city);
+        cf_json_add_string_to_object(fld, "State", fields[i].state);
+        cf_json_add_string_to_object(fld, "Zip", fields[i].zip);
+        cf_json_add_string_to_object(fld, "Country", fields[i].country);
     }
 
     /* cJSON_ReplaceItemInObject(cJSON_GetArrayItem(root, 1), "City", cJSON_CreateIntArray(ids, 4)); */
 
     if (print_preallocated(root) != 0) {
-        cJSON_Delete(root);
+        cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cJSON_Delete(root);
+    cf_json_delete(root);
 
-    root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "number", 1.0 / zero);
+    root = cf_json_create_object();
+    cf_json_add_number_to_object(root, "number", 1.0 / zero);
 
     if (print_preallocated(root) != 0) {
-        cJSON_Delete(root);
+        cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cJSON_Delete(root);
+    cf_json_delete(root);
 }
 
 int main(void)
