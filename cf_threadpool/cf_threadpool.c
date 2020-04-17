@@ -26,11 +26,10 @@ static void* _thread_item_run(void* arg){
 static bool _thread_item_start(struct _thread_item* item,void (*run)(void*),void* d){
     int ret = pthread_mutex_trylock(&item->m_mutex);
     if(ret == 0){
-        CXLOG_DBG("video source this=%p",d);
         item->m_data = d;
         cf_async_queue_push(item->m_queue,run);
     }
-    return ret;
+    return ret == 0 ? true : false;
 }
 
 static struct _thread_item* create_thread_item(){
@@ -47,7 +46,7 @@ static struct _thread_item* create_thread_item(){
 
 static void _thread_delete(struct _thread_item* item)
 {
-    pthread_cancel(&item->m_thread);
+    pthread_cancel(item->m_thread);
     pthread_mutex_destroy(&item->m_mutex);
     cf_async_queue_delete(item->m_queue);
 };
@@ -69,13 +68,73 @@ struct cf_threadpool* cf_threadpool_create(size_t thread_count)
             cf_list_push(threadpool->m_threads,create_thread_item());
         }
     }
+    return threadpool;
 }
-    int cf_threadpool_start(void (*run)(void*),void* d){
-        for(auto itor = m_threads.begin();itor != m_threads.end();itor++)
-        {
-            if((*itor)->start(run,d) == true)
-                return 0;
-        }
-        return -1;
-         
+int cf_threadpool_start(struct cf_threadpool* threadpool,void (*run)(void*),void* d){
+    for(struct cf_iterator iter = cf_list_begin(threadpool->m_threads);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
+    {
+        struct  _thread_item*  item = cf_iterator_get(&iter);
+        
+        if(_thread_item_start(item,run,d) == true)
+            return 0;
     }
+    return -1;
+}
+static struct cf_threadpool* cf_threadpool_global_instance(){
+    static struct cf_threadpool* instance = NULL;
+    if(instance == NULL){
+        instance = cf_threadpool_create(40);
+    }
+    return instance;
+}
+int cf_threadpool_run(void (*run)(void*),void* d){
+    struct cf_threadpool* threadpool = cf_threadpool_global_instance();
+    return cf_threadpool_start(threadpool,run,d);
+}
+/*************************************
+ * gcc -DCF_THREADPOOL_TEST -g -I../ cf_threadpool.c ../cf_allocator/cf_allocator_simple.c ../cf_async_queue/cf_async_queue.c ../cf_collection/cf_list.c ../cf_collection/cf_iterator.c -lpthread -o cf_threadpool_test
+ * ***********************************/
+#ifdef CF_THREADPOOL_TEST
+#include <unistd.h>
+#include <stdio.h>
+static struct cf_async_queue* aq = NULL;
+
+static void test_consumer(void* d){
+    while(true)
+    {
+        const char* str =  cf_async_queue_pop(aq);
+        printf("recv str=%s\n",str);
+        sleep(1);
+    }
+}
+
+static void test_producer( void* d ){
+    while(true)
+    {
+        cf_async_queue_push(aq,"hell");
+        sleep(1);
+    }
+    
+        
+}
+
+static void test_loop_print(void* d){
+    for(int i =0;i < 10;i++){
+        printf("i=%d\n",i);
+        sleep(1);
+    }
+}
+
+void util_test(){
+    aq = cf_async_queue_create();
+    cf_threadpool_run(test_loop_print,NULL);
+    cf_threadpool_run(test_producer,NULL);
+    cf_threadpool_run(test_consumer,NULL);
+}
+int main(){
+    util_test();
+    while(1){
+        sleep(1);
+    }
+}
+#endif//CF_THREADPOOL_TEST

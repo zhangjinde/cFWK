@@ -16,7 +16,7 @@ struct cf_list{
 };
 
 static struct _node* _create_node(void* data){
-    struct _node* node = cf_allocator_simple_alloc(sizeof(struct _node));
+    struct _node* node = (struct _node*)cf_allocator_simple_alloc(sizeof(struct _node));
     if(node)
     {
         node->data = data;
@@ -27,7 +27,7 @@ static struct _node* _create_node(void* data){
 
 
 struct cf_list* cf_list_create(){
-    struct cf_list* list = cf_allocator_simple_alloc(sizeof(struct cf_list));
+    struct cf_list* list = (struct cf_list*)cf_allocator_simple_alloc(sizeof(struct cf_list));
     if(list)
     {
         list->m_head = _create_node(NULL);
@@ -81,24 +81,28 @@ void* cf_list_take_front(struct cf_list* list){
     }
     return data;
 }
+
 size_t cf_list_length(const struct cf_list* list){
     return list->m_length;
 }
-static bool has_next(struct cf_iterator* iter){
+
+static bool is_end(struct cf_iterator* iter){
     struct _node* node = (struct _node*)iter->m_priv;
-    return node->next != NULL;
+    return node == NULL;
 }
+
 static void next(struct cf_iterator* iter){
     struct _node* node = (struct _node*)iter->m_priv;
     iter->m_priv = node->next;
 }
+
 static void* get(struct cf_iterator* iter){
     return ((struct _node*)iter->m_priv)->data;
 }
 
 const struct cf_iterator_vt cf_list_iterator_vt = 
 {
-    .has_next = has_next,
+    .is_end = is_end,
     .next = next,
     .get = get
 };
@@ -115,8 +119,13 @@ struct cf_iterator cf_list_begin(struct cf_list* list){
 /*************************
  * gcc -DCF_LIST_TEST -I../ cf_list.c cf_iterator.c ../cf_allocator/cf_allocator_simple.c -o cf_list_test
  * *********************/
+static int f(){
+    return 1;
+}
+static int x = f();
 int main(){
 
+printf("%d\n",x);
     struct cf_list* list = cf_list_create();
     cf_list_push(list,(void*)123);
     cf_list_push(list,(void*)456);

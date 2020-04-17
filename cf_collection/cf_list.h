@@ -2,7 +2,6 @@
 #define CF_LIST_H
 
 #include <stdbool.h>
-#include <stdio.h>
 #include "cf_iterator.h"
 struct cf_list;
 struct cf_list* cf_list_create();

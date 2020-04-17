@@ -33,7 +33,7 @@ void* cf_async_queue_pop(struct cf_async_queue* queue)
     if(cf_list_is_empty(queue->m_queue) == true){
             pthread_cond_wait(&queue->m_condition,&queue->m_mutex);
     }
-    void* item = cf_list_take_front(&queue->m_queue);
+    void* item = cf_list_take_front(queue->m_queue);
     pthread_mutex_unlock(&queue->m_mutex);
     return item;
 }
@@ -45,6 +45,7 @@ void cf_async_queue_push(struct cf_async_queue* queue,void* item){
     {
         pthread_cond_signal(&queue->m_condition);
     }
+    pthread_mutex_unlock(&queue->m_mutex);
 }
 void cf_async_queue_delete(struct cf_async_queue* queue){
     pthread_mutex_destroy(&queue->m_mutex);
