@@ -111,7 +111,7 @@ static void test_consumer(void* d){
 static void test_producer( void* d ){
     while(true)
     {
-        cf_async_queue_push(aq,"hell");
+        cf_async_queue_push(aq,d);
         sleep(1);
     }
     
@@ -128,7 +128,7 @@ static void test_loop_print(void* d){
 void util_test(){
     aq = cf_async_queue_create();
     cf_threadpool_run(test_loop_print,NULL);
-    cf_threadpool_run(test_producer,NULL);
+    cf_threadpool_run(test_producer,"123");
     cf_threadpool_run(test_consumer,NULL);
 }
 int main(){

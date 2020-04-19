@@ -119,13 +119,9 @@ struct cf_iterator cf_list_begin(struct cf_list* list){
 /*************************
  * gcc -DCF_LIST_TEST -I../ cf_list.c cf_iterator.c ../cf_allocator/cf_allocator_simple.c -o cf_list_test
  * *********************/
-static int f(){
-    return 1;
-}
-static int x = f();
+#include <stdio.h>
 int main(){
 
-printf("%d\n",x);
     struct cf_list* list = cf_list_create();
     cf_list_push(list,(void*)123);
     cf_list_push(list,(void*)456);
