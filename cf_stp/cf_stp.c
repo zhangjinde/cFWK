@@ -2,6 +2,8 @@
 #define  STPMANAGER_H
 #include "cf_stp.h"
 #include "cf_collection/cf_hash.h"
+#include "cf_collection/cf_vector.h"
+#include "cf_util/cf_util.h"
 #include <stdint.h>
 #include <unistd.h>
 #include<stdio.h>
@@ -32,19 +34,102 @@
 //     rp->m_len = sizeof(m_addr);
 // }
 struct stp_server{
-    enum cf_stp_type_e m_type;
     int m_multicast_socket;
     int m_server_socket;
     struct cf_hash* m_processors;
+    uint32_t m_multi_addr;
+    uint16_t m_multi_port;
 };
 
-int stp_server_init(struct stp_server* server,uint16_t port ,const char* multicast_addr ,uint16_t multicast_port)
+struct stp_client{
+    int m_multicast_socket;
+    int m_cli_socket;
+    struct cf_hash* m_processors;
+};
+int cf_stp_client_init(struct stp_client* client,const char* multicast_addr ,uint16_t multicast_port)
+{
+    int err;
+    struct sockaddr_in local_addr;
+
+    client->m_multicast_socket = -1;
+    client->m_cli_socket = -1;
+    if( multicast_addr){
+        client->m_multicast_socket = socket(AF_INET, SOCK_DGRAM, 0);
+        if (client->m_multicast_socket == -1)
+        {
+            perror("socket()");
+            goto err1;
+        }
+        
+        memset(&local_addr, 0, sizeof(local_addr));
+        local_addr.sin_family = AF_INET;
+        local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        local_addr.sin_port = htons(multicast_port);
+
+        /*绑定socket*/
+        err = bind(client->m_multicast_socket,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
+        if(err < 0)
+        {
+            close(server->m_multicast_socket);
+            server->m_multicast_socket = -1;
+            perror("bind()");
+            goto err1;
+        }
+        #if 0
+        struct ip_mreq mreq;                                /*加入多播组*/
+        mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);  /*多播地址*/
+        mreq.imr_interface.s_addr = htonl(INADDR_ANY);      /*网络接口为默认*/
+        /*将本机加入多播组*/
+        err = setsockopt(socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
+        if (err < 0)
+        {
+            perror("setsockopt():IP_ADD_MEMBERSHIP");
+            goto err2;
+        }
+        #endif
+    }
+    server->m_server_socket = socket(AF_INET, SOCK_STREAM, 0);         /*建立套接字*/
+    if (server->m_server_socket == -1)
+    {
+        perror("socket()");
+        goto err2;
+    }
+    memset(&local_addr, 0, sizeof(local_addr));
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    local_addr.sin_port = htons(port);
+
+    /*绑定socket*/
+    err = bind(server->m_server_socket,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
+    if(err < 0)
+    {
+        close(server->m_server_socket);
+        server->m_server_socket = -1;
+        perror("bind()");
+        goto err2;
+    }
+    server->m_processors = cf_hash_create(cf_hash_str_hash,cf_hash_str_equal,NULL,NULL);
+    return 0;
+
+err2:
+    if(server->m_multicast_socket >= 0)
+    {
+        close(server->m_multicast_socket);
+        server->m_multicast_socket = -1;
+    }
+err1:
+    return -1;
+
+}
+int cf_stp_server_init(struct stp_server* server,uint16_t port ,const char* multicast_addr ,uint16_t multicast_port)
 {
     int err;
     struct sockaddr_in local_addr;
 
     server->m_multicast_socket = -1;
     server->m_server_socket = -1;
+    server->m_multi_addr = inet_addr(multicast_addr);;
+    server->m_multi_port = multicast_port;
     if( multicast_addr){
         server->m_multicast_socket = socket(AF_INET, SOCK_DGRAM, 0);
         if (server->m_multicast_socket == -1)
@@ -59,14 +144,14 @@ int stp_server_init(struct stp_server* server,uint16_t port ,const char* multica
         local_addr.sin_port = htons(multicast_port);
 
         /*绑定socket*/
-        err = bind(server->m_multicast_socket,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
-        if(err < 0)
-        {
-            close(server->m_multicast_socket);
-            server->m_multicast_socket = -1;
-            perror("bind()");
-            goto err1;
-        }
+        // err = bind(server->m_multicast_socket,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
+        // if(err < 0)
+        // {
+        //     close(server->m_multicast_socket);
+        //     server->m_multicast_socket = -1;
+        //     perror("bind()");
+        //     goto err1;
+        // }
         #if 0
         struct ip_mreq mreq;                                /*加入多播组*/
         mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);  /*多播地址*/
@@ -135,9 +220,36 @@ int cf_stp_server_run(struct stp_server* server){
             FD_SET((int)cf_iterator_get(&iter),&r_set);
         }
         struct timeval timeout;
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-        int nready = select(max_fd+1,&r_set,NULL,NULL,&timeout);
+        struct timeval* p_timeout = NULL;
+        static int64_t last_ms = -1;
+        if(last_ms == -1)
+            last_ms = cf_util_gettime_ms();
+        if(server->m_multicast_socket > -1)
+        {
+            int64_t this_ms = cf_util_gettime_ms();
+            int64_t remain_ms = 3000-(this_ms-last_ms);
+            remain_ms = remain_ms < 0 ? 0 :remain_ms;
+            timeout.tv_sec = remain_ms/1000;
+            timeout.tv_usec = remain_ms%1000*1000;
+            p_timeout = &timeout;
+        }
+
+        int nready = select(max_fd+1,&r_set,NULL,NULL,p_timeout);
+        if(nready == 0)
+        {
+            static struct cf_json* multi_json = NULL;
+            multi_json = cf_json_create_object();
+            cf_json_add_string_to_object(multi_json,"msg","this is a test");
+
+            struct sockaddr_in sock_addr;
+            sock_addr.sin_family = AF_INET;
+            sock_addr.sin_addr.s_addr = inet_addr(server->m_multi_addr);
+            sock_addr.sin_port = htons(server->m_multi_port);
+            int sock_len = sizeof(sock_addr);
+
+            sendto(server->m_multicast_socket,cf_json_print(multi_json),strlen(cf_json_print(multi_json)+1),0,&sock_addr,sock_len);
+            last_ms = cf_util_gettime_ms();
+        }
         if(FD_ISSET(server->m_server_socket,&r_set)){
             struct sockaddr_in cli_addr;
             socklen_t len = sizeof(cli_addr);
@@ -159,18 +271,36 @@ int cf_stp_server_run(struct stp_server* server){
         for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
         {
             int fd = (int)cf_iterator_get(&iter);
-            char buf[1024];
+            static struct cf_vector* byte_vector = NULL;
+            if(byte_vector == NULL)
+                byte_vector = cf_vector_create(1,0);
             if(fd,&r_set)
             {
-                ssize_t count = read(fd,buf,sizeof(buf)) ;
+                uint32_t pendingh_size = 0;
+                ssize_t count = read(fd,&pendingh_size,sizeof(uint32_t)) ;
                 if(count <= 0)
                 {
                     close(fd);
                     cf_iterator_remove(&iter);
                     continue;
                 }
+                cf_vector_resize(byte_vector,pendingh_size);
+                uint8_t* ptr = cf_vector_buffer(byte_vector);
+                do{
+                    count = read(fd,ptr,pendingh_size);
+                    if(count <= 0)
+                    {
+                        close(fd);
+                        cf_iterator_remove(&iter);
+                        break;
+                    }
+                    pendingh_size -= count;
+                    ptr+=count;
+                }while(pendingh_size > 0);
+                if(pendingh_size > 0)
+                    continue;
 
-                struct cf_json* json = cf_json_load(buf);
+                struct cf_json* json = cf_json_load(cf_vector_buffer(byte_vector));
                 if(json == NULL)
                     continue;
                 int seq = cf_json_get_int(json,"seq",NULL);
@@ -181,7 +311,17 @@ int cf_stp_server_run(struct stp_server* server){
                 if(reply)
                     cf_json_add_item_to_object(respone,"reply",reply);
                 cf_json_add_int_to_object(respone,"seq",seq);
-                
+                char* json_str = cf_json_print(respone);
+                size_t json_str_size = strlen(json_str);
+                cf_vector_resize(byte_vector,json_str_size+sizeof(uint32_t)+5);
+                (*(uint32_t*)cf_vector_buffer(byte_vector)) = cf_vector_length(byte_vector) - sizeof(uint32_t);
+                count = write(fd,cf_vector_buffer(byte_vector),cf_vector_length(byte_vector));
+                if(count <= 0)
+                {
+                    close(fd);
+                    cf_iterator_remove(&iter);
+                    break;
+                }
             }
         }
     }

@@ -26,29 +26,40 @@ void* cf_vector_buffer(struct cf_vector* vector){
 size_t cf_vector_length(struct cf_vector* vector){
     return vector->m_elem_count;
 }
-int cf_vector_append(struct cf_vector* vector,void* array,size_t count)
-{
+int cf_vector_resize(struct cf_vector* vector,size_t count){
     int ret = 0;
-    if(vector->m_elem_size*(vector->m_elem_count+count) > vector->m_capacity)
+    if(vector->m_elem_size*count > vector->m_capacity)
     {
-        size_t new_capacity = vector->m_elem_size*(vector->m_elem_count+count);
-        new_capacity+new_capacity / 2;
+        size_t new_capacity = vector->m_elem_size*count;
+        new_capacity+=new_capacity / 2;
         void* new_mem = cf_allocator_simple_realloc (vector->m_buffer,new_capacity );
         if(new_mem)
         {
             vector->m_buffer = new_mem;
             vector->m_capacity = new_capacity;
+            vector->m_elem_count = count;
         }
         else
         {
             ret = -1;
         }
     }
+    return ret;
+}
+int cf_vector_append(struct cf_vector* vector,void* array,size_t count)
+{
+    int ret = 0;
+    ret = cf_vector_resize(vector,vector->m_elem_count+count);
     if(ret == 0)
     {
         memcpy(vector->m_buffer+vector->m_elem_size*vector->m_elem_count,array,vector->m_elem_size*count);
-        vector->m_elem_count += count;
     }
     return ret;
 }
-void cf_vector_delete(struct cf_vector* vector);
+    
+void cf_vector_delete(struct cf_vector* vector)
+{
+    if(vector->m_buffer)
+        cf_allocator_simple_free(vector->m_buffer);
+    cf_allocator_simple_free(vector);
+}
