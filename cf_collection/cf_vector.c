@@ -38,7 +38,6 @@ int cf_vector_append(struct cf_vector* vector,void* array,size_t count)
         {
             vector->m_buffer = new_mem;
             vector->m_capacity = new_capacity;
-            
         }
         else
         {

@@ -181,7 +181,7 @@ int cf_stp_server_run(struct stp_server* server){
                 if(reply)
                     cf_json_add_item_to_object(respone,"reply",reply);
                 cf_json_add_int_to_object(respone,"seq",seq);
-                if()
+                
             }
         }
     }
