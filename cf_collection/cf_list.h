@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include "cf_iterator.h"
 struct cf_list;
-struct cf_list* cf_list_create();
-void cf_list_delete(struct cf_list* list,void (*free_data)(void* data));
+struct cf_list* cf_list_create(void (*free_data)(void*));
+void cf_list_delete(struct cf_list* list);
 bool cf_list_is_empty(const struct cf_list*);
 void cf_list_push(struct cf_list*,void*);
 void* cf_list_take_front(struct cf_list*);

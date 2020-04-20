@@ -5,6 +5,10 @@
 struct cf_json{
 };
 
+struct cf_json* cf_json_load(const char* str)
+{
+    return (struct cf_json*)cJSON_Parse(str);
+}
 char* cf_json_print(const struct cf_json* item){
     if(item == NULL )
         return NULL;
@@ -60,6 +64,54 @@ struct  cf_json* cf_json_add_number_to_object(struct cf_json *object, const char
     return (struct  cf_json*)cJSON_AddNumberToObject((cJSON*)object,name,number);
 }
 
+struct  cf_json* cf_json_add_int_to_object(struct cf_json *object, const char * const name,  int number){
+    return cf_json_add_number_to_object(object,name,number);
+}
+
+struct cf_json* cf_json_get_item(struct cf_json *object, const char * const name){
+    return (struct cf_json*)cJSON_GetObjectItem((cJSON*)object, name);
+}
+int cf_json_to_int(struct cf_json *object){
+    double num = cJSON_GetNumberValue((cJSON*)object);
+    return (int)num;
+}
+char* cf_json_to_string(struct cf_json *object){
+    char* str = cJSON_GetStringValue((cJSON*)object);
+    return str;
+}
+char* cf_json_get_string(struct cf_json *object, const char * const name,int* err){
+    char* str = NULL;
+    int _err = 0;
+    struct cf_json * item = cf_json_get_item(object, name);
+    if(item)
+    {
+        str = cf_json_to_string(item);
+    }
+    else
+    {
+        _err = -1;
+    }
+    if(err)
+        *err = _err;
+    return str;
+}
+int cf_json_get_int(struct cf_json *object, const char * const name,int* err){
+    int val = 0;
+    int _err = 0;
+    struct cf_json * item = cf_json_get_item(object, name);
+    if(item)
+        val = cf_json_to_int(item);
+    else
+    {
+        _err = -1;
+    }   
+    if(err)
+        *err = _err;
+    return val;
+}
+
+CJSON_PUBLIC(double) cJSON_GetNumberValue(cJSON *item);
+
 struct  cf_json* cf_json_add_false_to_object(struct cf_json *object, const char * const name){
     if(object == NULL )
         return NULL;
@@ -70,9 +122,9 @@ struct  cf_json* cf_json_add_false_to_object(struct cf_json *object, const char 
 
 
 /**********************************************************************
- * gcc cf_json.c cJSON/cJSON.c -o cf_json_test
+ * gcc -g -DCF_JSON_TEST cf_json.c cJSON/cJSON.c -o cf_json_test
  * *********************************************************************/
-#ifndef CF_JSON_TEST
+#ifdef CF_JSON_TEST
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -159,7 +211,7 @@ static int print_preallocated(struct cf_json *root)
 }
 
 /* Create a bunch of objects as demonstration. */
-static void create_objects(void)
+static struct cf_json* create_objects(void)
 {
     /* declare a few. */
     struct cf_json *root = NULL;
@@ -306,15 +358,32 @@ static void create_objects(void)
         cf_json_delete(root);
         exit(EXIT_FAILURE);
     }
-    cf_json_delete(root);
+    
+    return root;
 }
 
 int main(void)
 {
 
     /* Now some samplecode for building objects concisely: */
-    create_objects();
+    struct cf_json* json = create_objects();
+    struct cf_json* item = NULL;
 
+    cf_json_add_number_to_object(json,"test_num1",123);
+    printf("test_num1=%d\n",cf_json_get_int(json,"test_num1",NULL));
+
+    cf_json_add_number_to_object(json,"test_num2",222);
+    item = cf_json_get_item(json,"test_num2"); 
+    printf("test_num2=%d\n",cf_json_to_int(item));
+    
+    cf_json_add_string_to_object(json,"test_str1","hi");
+    printf("test_str1=%s\n",cf_json_get_string(json,"test_str1",NULL));
+
+    cf_json_add_string_to_object(json,"test_str2","hello");
+    item = cf_json_get_item(json, "test_str2");
+    printf("test_str2=%s\n",cf_json_to_string(item));
+
+    cf_json_delete(json);
     return 0;
 }
 

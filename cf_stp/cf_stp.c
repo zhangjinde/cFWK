@@ -1,41 +1,41 @@
 #ifndef  STPMANAGER_H
 #define  STPMANAGER_H
-
-#include<stdint.h>
-
+#include "cf_stp.h"
+#include "cf_collection/cf_hash.h"
+#include <stdint.h>
+#include <unistd.h>
 #include<stdio.h>
 #include<stdlib.h>  
 #include<string.h>     
 #include<unistd.h>      
 #include<sys/types.h>    
 #include<sys/socket.h>     
-#include<arpa/inet.h>    
+#include<arpa/inet.h>  
+#include<sys/select.h>   
 #include<netinet/in.h> 
-#include<json/json.h>
-#include "json_util.h"
-#include<sstream>
+
+#include "cf_collection/cf_list.h"
+#include "cf_json/cf_json.h"
 
 #define STP_MAX_PKG_SIZE    (60*1024)
-struct _remote_point
-{
-    struct sockaddr_in m_addr;
-    int m_len;
-};
+// struct _remote_point
+// {
+//     struct sockaddr_in m_addr;
+//     int m_len;
+// };
 
-static _remote_point _remote_point_init(struct _remote_point* rp,const char* ip_addr,uint16_t port)
-{
-    rp->m_addr.sin_family = AF_INET;
-    rp->m_addr.sin_addr.s_addr = inet_addr(ip_addr);
-    rp->m_addr.sin_port = htons(port);
-    rp->m_len = sizeof(m_addr);
-}
+// static struct _remote_point _remote_point_init(struct _remote_point* rp,const char* ip_addr,uint16_t port)
+// {
+//     rp->m_addr.sin_family = AF_INET;
+//     rp->m_addr.sin_addr.s_addr = inet_addr(ip_addr);
+//     rp->m_addr.sin_port = htons(port);
+//     rp->m_len = sizeof(m_addr);
+// }
 struct stp_server{
     enum cf_stp_type_e m_type;
     int m_multicast_socket;
     int m_server_socket;
-    const int m_timeout_ms;
-    int m_request_seq;
-    int m_response_seq;
+    struct cf_hash* m_processors;
 };
 
 int stp_server_init(struct stp_server* server,uint16_t port ,const char* multicast_addr ,uint16_t multicast_port)
@@ -100,6 +100,7 @@ int stp_server_init(struct stp_server* server,uint16_t port ,const char* multica
         perror("bind()");
         goto err2;
     }
+    server->m_processors = cf_hash_create(cf_hash_str_hash,cf_hash_str_equal,NULL,NULL);
     return 0;
 
 err2:
@@ -108,13 +109,83 @@ err2:
         close(server->m_multicast_socket);
         server->m_multicast_socket = -1;
     }
-
 err1:
     return -1;
 }
+void cf_stp_server_listen_topic(struct stp_server* server,const char* topic,void(*proccessor)())
+{
+    cf_hash_insert(server->m_processors,topic,proccessor); 
+}
+void cf_stp_server_deinit(struct stp_server* server){
+    cf_hash_delete(server->m_processors);
+    if(server->m_multicast_socket >= 0)
+        close(server->m_multicast_socket);
+    if(server->m_server_socket >= 0)
+        close(server->m_server_socket);
+}
 
 int cf_stp_server_run(struct stp_server* server){
+    struct cf_list* cli_list = cf_list_create(NULL);
+    int max_fd = server->m_server_socket;
+    while(true){
+        fd_set r_set;
+        FD_ZERO(&r_set);
+        FD_SET(server->m_server_socket,&r_set);
+        for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
+            FD_SET((int)cf_iterator_get(&iter),&r_set);
+        }
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        int nready = select(max_fd+1,&r_set,NULL,NULL,&timeout);
+        if(FD_ISSET(server->m_server_socket,&r_set)){
+            struct sockaddr_in cli_addr;
+            socklen_t len = sizeof(cli_addr);
+            int cli_sock = accept(server->m_server_socket, (struct sockaddr *)&cli_addr, &len);
+            //COMM_DEBUG("accept ... \n");
+            if(cli_sock < 0)
+            {
+                //COMM_ERROR("accept nova protocol cli socket failure.");
+            }
+            else
+            {
+                cf_list_push(cli_list,cli_sock);
+                //COMM_LOG("accept client %s:%hu\n",inet_ntoa(cli_addr.sin_addr),cli_addr.sin_port);
+                if(cli_sock > max_fd)
+                    max_fd = cli_sock;
+            }
 
+        }
+        for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
+        {
+            int fd = (int)cf_iterator_get(&iter);
+            char buf[1024];
+            if(fd,&r_set)
+            {
+                ssize_t count = read(fd,buf,sizeof(buf)) ;
+                if(count <= 0)
+                {
+                    close(fd);
+                    cf_iterator_remove(&iter);
+                    continue;
+                }
+
+                struct cf_json* json = cf_json_load(buf);
+                if(json == NULL)
+                    continue;
+                int seq = cf_json_get_int(json,"seq",NULL);
+                char* topic = cf_json_get_string(json,"topic",NULL);
+                struct cf_json* (*proccessor)(struct cf_json* ) = cf_hash_get(server->m_processors,topic,NULL); 
+                struct cf_json* reply = proccessor(cf_json_get_item(json,"msg"));
+                struct cf_json* respone = cf_json_create_object();
+                if(reply)
+                    cf_json_add_item_to_object(respone,"reply",reply);
+                cf_json_add_int_to_object(respone,"seq",seq);
+                if()
+            }
+        }
+    }
+    cf_list_delete(cli_list);
 }
 
 class STPRemotePoint{    

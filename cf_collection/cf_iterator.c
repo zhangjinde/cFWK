@@ -23,3 +23,7 @@ void* cf_iterator_get(struct cf_iterator* iter){
     else
         return NULL;
 }
+void cf_iterator_remove(struct cf_iterator* iter){
+    if(iter && iter->m_vt && iter->m_vt->remove)
+        iter->m_vt->remove(iter);
+}
