@@ -11,7 +11,7 @@ void cf_allocator_simple_free(void* mem){
     mem_alloc_size -= *((size_t*)(mem-sizeof(size_t)));
     free(mem-sizeof(size_t));
 }
-void* cf_allocator_realloc(void* mem,size_t size)
+void* cf_allocator_simple_realloc(void* mem,size_t size)
 {
     size_t old_size = *((size_t*)(mem-sizeof(size_t)));
     void* new_mem = realloc(mem-sizeof(size_t),size+sizeof(size_t));

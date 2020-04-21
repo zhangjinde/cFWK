@@ -22,7 +22,12 @@ int cf_json_print_preallocated(const struct cf_json* item,char *buffer, const in
 struct cf_json* cf_json_create_object(){
     return (struct cf_json*)cJSON_CreateObject();
 }
-void cf_json_delete(struct cf_json* item){
+struct cf_json* cf_json_clone(struct cf_json* json)
+{
+    return (struct cf_json *) cJSON_Duplicate( (cJSON *)json, true);
+}
+
+void cf_json_destroy_object(struct cf_json* item){
     cJSON_Delete((cJSON*)item);
 }
 
@@ -79,6 +84,10 @@ char* cf_json_to_string(struct cf_json *object){
     char* str = cJSON_GetStringValue((cJSON*)object);
     return str;
 }
+struct cf_json* cf_json_detach_item(struct cf_json* parent,const char* name){
+    return (struct cf_json*)cJSON_DetachItemFromObject((cJSON *)parent, name);
+}
+
 char* cf_json_get_string(struct cf_json *object, const char * const name,int* err){
     char* str = NULL;
     int _err = 0;
@@ -110,7 +119,6 @@ int cf_json_get_int(struct cf_json *object, const char * const name,int* err){
     return val;
 }
 
-CJSON_PUBLIC(double) cJSON_GetNumberValue(cJSON *item);
 
 struct  cf_json* cf_json_add_false_to_object(struct cf_json *object, const char * const name){
     if(object == NULL )

@@ -8,13 +8,13 @@ struct cf_async_queue{
     struct cf_list* m_queue;
 
 };
-struct cf_async_queue* cf_async_queue_create(){
+struct cf_async_queue* cf_async_queue_create(void (*free_data)(void*)){
     struct cf_async_queue* queue = cf_allocator_simple_alloc(sizeof(struct cf_async_queue));
     if(queue)
     {
         pthread_mutex_init(&queue->m_mutex,NULL); 
         pthread_cond_init(&queue->m_condition,NULL);
-        struct cf_list* list = cf_list_create();
+        struct cf_list* list = cf_list_create(free_data);
         if(list)
         {
             queue->m_queue = list;
@@ -50,6 +50,6 @@ void cf_async_queue_push(struct cf_async_queue* queue,void* item){
 void cf_async_queue_delete(struct cf_async_queue* queue){
     pthread_mutex_destroy(&queue->m_mutex);
     pthread_cond_destroy(&queue->m_condition);
-    cf_list_delete(queue->m_queue,NULL);
+    cf_list_delete(queue->m_queue);
     cf_allocator_simple_free(queue);
 }

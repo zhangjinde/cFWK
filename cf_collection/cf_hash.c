@@ -56,7 +56,7 @@ void cf_hash_delete(struct cf_hash* hash){
                             hash->m_value_free_func(item->value);
                         cf_allocator_simple_free(item);
                     }
-                    cf_list_delete(hash->m_items[inx].value,NULL);
+                    cf_list_delete(hash->m_items[inx].value);
                 }
                 else
                 {
@@ -101,7 +101,7 @@ void cf_hash_insert(struct cf_hash* hash,void* key,void* value){
         }
         else {  //未冲突，key不相等则作冲突化处理，创建冲突list，同时把旧的key，value及新的key，value同时加入冲突list
             hash->m_conflict_flag[inx/8] |= (1 << (inx%8));
-            struct cf_list* list = cf_list_create();
+            struct cf_list* list = cf_list_create(NULL); //list内的struct _hash_item需要在链表外部精确删除，因为需要调用相应的key/value free函数
             struct _hash_item* item = cf_allocator_simple_alloc(sizeof(struct _hash_item));
             item->key = hash->m_items[inx].key;
             item->value = hash->m_items[inx].value;

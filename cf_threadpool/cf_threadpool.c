@@ -1,3 +1,4 @@
+#include "cf_threadpool.h"
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_async_queue/cf_async_queue.h"
 #include <pthread.h>
@@ -32,7 +33,7 @@ static bool _thread_item_start(struct _thread_item* item,void (*run)(void*),void
     return ret == 0 ? true : false;
 }
 
-static struct _thread_item* create_thread_item(){
+static struct _thread_item* _create_thread_item(){
     struct _thread_item* item = (struct _thread_item*)cf_allocator_simple_alloc(sizeof(struct _thread_item));
     if(item)
     {
@@ -44,8 +45,9 @@ static struct _thread_item* create_thread_item(){
     return item;
 }
 
-static void _thread_delete(struct _thread_item* item)
+static void _destroy_thread_item(void* _item)
 {
+    struct _thread_item* item = (struct _thread_item* )_item;
     pthread_cancel(item->m_thread);
     pthread_mutex_destroy(&item->m_mutex);
     cf_async_queue_delete(item->m_queue);
@@ -62,10 +64,10 @@ struct cf_threadpool* cf_threadpool_create(size_t thread_count)
     if(threadpool)
     {
         threadpool->m_max_thread_count = thread_count;
-        threadpool->m_threads = cf_list_create();
+        threadpool->m_threads = cf_list_create(_destroy_thread_item);
         for(size_t i = 0;i < thread_count;i++)
         {
-            cf_list_push(threadpool->m_threads,create_thread_item());
+            cf_list_push(threadpool->m_threads,_create_thread_item());
         }
     }
     return threadpool;

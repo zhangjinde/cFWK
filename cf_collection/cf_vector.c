@@ -1,5 +1,6 @@
 #include "cf_vector.h"
 #include "cf_allocator/cf_allocator_simple.h"
+#include <string.h>
 #define CF_VECTOR_DEFAULT_BUFF_SIZE     32
 struct cf_vector{
     void* m_buffer;
