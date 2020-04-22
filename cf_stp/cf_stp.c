@@ -95,10 +95,11 @@ int cf_stp_client_init(struct cf_stp_client* client,const char* multicast_addr ,
             perror("bind client");
             goto err1;
         }
-        #if 1
+
         struct ip_mreq mreq;                                /*加入多播组*/
         mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);  /*多播地址*/
         mreq.imr_interface.s_addr = htonl(INADDR_ANY);      /*网络接口为默认*/
+        //mreq.imr_interface.s_addr = inet_addr("192.168.10.74");      /*网络接口为默认*/
         /*将本机加入多播组*/
         err = setsockopt(client->m_multicast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
         if (err < 0)
@@ -106,7 +107,6 @@ int cf_stp_client_init(struct cf_stp_client* client,const char* multicast_addr ,
             perror("setsockopt():IP_ADD_MEMBERSHIP");
             goto err2;
         }
-        #endif
     }
     client->m_cli_socket = socket(AF_INET, SOCK_STREAM, 0);         /*建立套接字*/
     if (client->m_cli_socket == -1)
@@ -419,7 +419,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
         {
             struct cf_stp_context* context = (struct cf_stp_context*)cf_iterator_get(&iter);
 
-            if(context->m_socket,&r_set)
+            if(FD_ISSET(context->m_socket,&r_set))
             {
                 uint32_t pending_size = 0;
                 ssize_t count = read(context->m_socket,&pending_size,sizeof(uint32_t)) ;
@@ -446,7 +446,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                             fclose(context->m_fd);
                         cf_allocator_simple_free(context); 
                         cf_iterator_remove(&iter);
-                        break;
+                        continue;
                     }
                     pending_size -= count;
                     ptr+=count;
@@ -463,6 +463,11 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     int seq = cf_json_get_int(json,"seq",NULL);
                     char* topic = cf_json_get_string(json,"topic",NULL);
                     struct cf_json* (*proccessor)(struct cf_stp_context*,struct cf_json* ) = cf_hash_get(server->m_processors,topic,NULL); 
+                    if(proccessor == NULL)
+                    {
+                        cf_json_destroy_object(json);
+                        continue;
+                    }
                     struct cf_json* reply = proccessor(context,cf_json_get_item(json,"msg"));
                     cf_json_destroy_object(json);
                     struct cf_json* respone = cf_json_create_object();
@@ -471,7 +476,8 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     cf_json_add_int_to_object(respone,"seq",seq);
                     char* json_str = cf_json_print(respone);
                     size_t json_str_size = strlen(json_str);
-                    cf_vector_resize(byte_vector,json_str_size+sizeof(uint32_t)+5);
+                    cf_vector_resize(byte_vector,json_str_size+sizeof(uint32_t)+1);
+                    ((uint8_t*)cf_vector_buffer(byte_vector))[cf_vector_length(byte_vector)-1] = 0;
                     (*(uint32_t*)cf_vector_buffer(byte_vector)) = cf_vector_length(byte_vector) - sizeof(uint32_t);
                     strcpy(cf_vector_buffer(byte_vector)+sizeof(uint32_t),json_str);
                     count = write(context->m_socket,cf_vector_buffer(byte_vector),cf_vector_length(byte_vector));
@@ -484,7 +490,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                             fclose(context->m_fd);
                         cf_allocator_simple_free(context); 
                         cf_iterator_remove(&iter);
-                        break;
+                        continue;
                     }
                 }
                 else if( transfer_mod == 1) //file_upload_mod
@@ -620,7 +626,7 @@ void stp_client_test(void* d){
 }
 int main(int argc,const char* argv[]){
     cf_threadpool_run(stp_server_test,NULL);
-    cf_threadpool_run(stp_client_multi_test,NULL);
+    //cf_threadpool_run(stp_client_multi_test,NULL);
     sleep(1);
     const void* d = NULL;
     d = "cf_stp/cf_stp_test";
@@ -628,7 +634,7 @@ int main(int argc,const char* argv[]){
     if(argc > 1)
         d = argv[1];
     
-    cf_threadpool_run(stp_client_test,( void*)d);
+    //cf_threadpool_run(stp_client_test,( void*)d);
     while(true){
         sleep(1);
         //printf("alloc_size=%ld\n",cf_allocator_alloc_size());

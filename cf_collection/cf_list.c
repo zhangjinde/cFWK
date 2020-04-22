@@ -120,6 +120,8 @@ static void _remove(struct cf_iterator* iter)
     if(list->m_free_data)
         list->m_free_data(node);
     list->m_length--;
+    if(list->m_length == 0)
+        list->m_tail = list->m_head;
 }
 
 static const struct cf_iterator_vt cf_list_iterator_vt = 
