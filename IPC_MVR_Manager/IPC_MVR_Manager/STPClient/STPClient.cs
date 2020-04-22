@@ -32,6 +32,7 @@ namespace IPC_MVR_Manager.STPClient
 			{
 				mClientSocket.Connect(ipaddr, port);
 			}
+
 			catch
 			{
 				
