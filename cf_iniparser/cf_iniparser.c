@@ -1,6 +1,6 @@
 #include "cf_iniparser.h"
 #include "iniparser/iniparser.h"
-
+#include "cf_allocator/cf_allocator_simple.h"
 #if 1
 
 struct cf_inicontext{
@@ -11,7 +11,7 @@ struct cf_inicontext* cf_iniparser_load_from_file(const char* file_name)
     dictionary* dict = iniparser_load(file_name);
     if(dict == NULL)
         return NULL;
-    struct cf_inicontext* context = malloc(sizeof(struct cf_inicontext));
+    struct cf_inicontext* context = cf_allocator_simple_alloc(sizeof(struct cf_inicontext));
     if(context == NULL)
         return NULL;
 
@@ -26,7 +26,7 @@ void cf_inicontext_release(struct cf_inicontext* context){
         iniparser_freedict(context->dict);
         context->dict = NULL;
     }
-    free(context);
+    cf_allocator_simple_free(context);
 }
 
 int cf_iniparser_get_boolean(struct cf_inicontext* context,const char* key,int notfond)

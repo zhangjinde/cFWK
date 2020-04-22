@@ -168,7 +168,7 @@ static int print_preallocated(struct cf_json *root)
     /* create buffer to succeed */
     /* the extra 5 bytes are because of inaccuracies when reserving memory */
     len = strlen(out) + 5;
-    buf = (char*)malloc(len);
+    buf = (char*)cf_allocator_simple_alloc(len);
     if (buf == NULL)
     {
         printf("Failed to allocate memory.\n");
@@ -177,7 +177,7 @@ static int print_preallocated(struct cf_json *root)
 
     /* create buffer to fail */
     len_fail = strlen(out);
-    buf_fail = (char*)malloc(len_fail);
+    buf_fail = (char*)cf_allocator_simple_alloc(len_fail);
     if (buf_fail == NULL)
     {
         printf("Failed to allocate memory.\n");
@@ -192,9 +192,9 @@ static int print_preallocated(struct cf_json *root)
             printf("cJSON_Print result:\n%s\n", out);
             printf("cJSON_PrintPreallocated result:\n%s\n", buf);
         }
-        free(out);
-        free(buf_fail);
-        free(buf);
+        cf_allocator_simple_free(out);
+        cf_allocator_simple_free(buf_fail);
+        cf_allocator_simple_free(buf);
         return -1;
     }
 
@@ -206,15 +206,15 @@ static int print_preallocated(struct cf_json *root)
         printf("cJSON_PrintPreallocated failed to show error with insufficient memory!\n");
         printf("cJSON_Print result:\n%s\n", out);
         printf("cJSON_PrintPreallocated result:\n%s\n", buf_fail);
-        free(out);
-        free(buf_fail);
-        free(buf);
+        cf_allocator_simple_free(out);
+        cf_allocator_simple_free(buf_fail);
+        cf_allocator_simple_free(buf);
         return -1;
     }
 
-    free(out);
-    free(buf_fail);
-    free(buf);
+    cf_allocator_simple_free(out);
+    cf_allocator_simple_free(buf_fail);
+    cf_allocator_simple_free(buf);
     return 0;
 }
 

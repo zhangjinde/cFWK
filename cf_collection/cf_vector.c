@@ -1,6 +1,8 @@
 #include "cf_vector.h"
 #include "cf_allocator/cf_allocator_simple.h"
+#include "cf_iterator.h"
 #include <string.h>
+#include <stdint.h>
 #define CF_VECTOR_DEFAULT_BUFF_SIZE     32
 struct cf_vector{
     void* m_buffer;
@@ -44,7 +46,11 @@ int cf_vector_resize(struct cf_vector* vector,size_t count){
         {
             ret = -1;
         }
+    }else
+    {
+        vector->m_elem_count = count;
     }
+    
     return ret;
 }
 int cf_vector_append(struct cf_vector* vector,void* array,size_t count)
@@ -63,4 +69,40 @@ void cf_vector_delete(struct cf_vector* vector)
     if(vector->m_buffer)
         cf_allocator_simple_free(vector->m_buffer);
     cf_allocator_simple_free(vector);
+}
+static bool is_end(struct cf_iterator* iter){
+    return (int64_t)iter->m_priv == ((struct cf_vector*)iter->m_container)->m_elem_count;
+}
+static void next(struct cf_iterator* iter){
+    iter->m_priv = (void*)(((int64_t)iter->m_priv)+1);   
+}
+static void _remove(struct cf_iterator* iter){
+    struct cf_vector* v = (struct cf_vector*)iter->m_container;
+    memmove(v->m_buffer+(int64_t)iter->m_priv * v->m_elem_size,v->m_buffer+(int64_t)(iter->m_priv+1) * v->m_elem_size,v->m_elem_size*(v->m_elem_count-(int64_t)iter->m_priv-1));
+    iter->m_priv = (void*)(((size_t)iter->m_priv)-1);
+}
+static void* get(struct cf_iterator* iter){
+    struct cf_vector* v = (struct cf_vector*)iter->m_container;
+    return v->m_buffer+(int64_t)iter->m_priv * v->m_elem_size;
+}
+
+static const struct cf_iterator_vt cf_vector_iterator_vt = 
+{
+    .is_end = is_end,
+    .next = next,
+    .get = get,
+    .remove = _remove
+    
+};
+
+
+
+struct cf_iterator cf_vector_begin(struct cf_vector* v)
+{
+    struct cf_iterator iter = {
+        .m_priv = 0,
+        .m_vt = &cf_vector_iterator_vt,
+        .m_container = v
+    };
+    return iter;
 }

@@ -122,7 +122,7 @@ static void _remove(struct cf_iterator* iter)
     list->m_length--;
 }
 
-const struct cf_iterator_vt cf_list_iterator_vt = 
+static const struct cf_iterator_vt cf_list_iterator_vt = 
 {
     .is_end = is_end,
     .next = next,
