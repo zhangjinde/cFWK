@@ -38,7 +38,7 @@ namespace IPC_MVR_Manager
             JObject msg = new JObject();
             msg["c#-test"] = "123456";
             msg = client.Request("test-topic", msg);
-            Console.WriteLine(" {0} 应答消息 {1}  ", obj["server-ip"], JsonConvert.SerializeObject(msg)); 
+            Console.WriteLine(" {0} 应答消息 {1}  ", obj["server-ip"], JsonConvert.SerializeObject(msg));
 
         }
         public MainWindow()
