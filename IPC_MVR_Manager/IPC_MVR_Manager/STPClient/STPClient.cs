@@ -28,10 +28,27 @@ namespace IPC_MVR_Manager.STPClient
 		}
 		public void Connect(string ipaddr,UInt16 port) {
 			//EndPoint serverAddr = new IPEndPoint(IPAddress.Parse(ipaddr), port);
-			mClientSocket.Connect(ipaddr, port);
+			try
+			{
+				mClientSocket.Connect(ipaddr, port);
+			}
+			catch
+			{
+				
+			}
+			
+		}
+		public void WriteBinary(byte[] data) {
+			byte[] buff = new byte[data.Length+8];
+			Array.Copy( BitConverter.GetBytes((UInt32)(data.Length + 4)),buff,4);
+			buff[4] = 1;
+			Array.Copy(data,0,buff,8,data.Length);
+			mClientSocket.GetStream().Write(buff,0,buff.Length);
 		}
 		public JObject Request(string topic,JObject msg)
 		{
+			if (!mClientSocket.Connected)
+				return null;
 			JObject obj = new JObject();
 			obj["topic"] = topic;
 			obj["msg"] = msg;
@@ -90,7 +107,7 @@ namespace IPC_MVR_Manager.STPClient
 			//System.Text.Encoding.UTF8.GetString(buff);
 			//server-ip
 			JObject obj = (JObject)JsonConvert.DeserializeObject(System.Text.Encoding.UTF8.GetString(buff, 0, buff.Length-1));
-			obj["server-ip"] = senderIP.ToString();
+			obj["server-ip"] = senderIP.Address.ToString();
 			if (onMultiCastMsg != null) {
 				onMultiCastMsg(obj);
 			}

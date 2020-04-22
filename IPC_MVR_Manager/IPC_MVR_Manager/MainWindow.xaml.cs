@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,11 +25,16 @@ namespace IPC_MVR_Manager
     public partial class MainWindow : Window
     {
         static STPClient.STPClient client = new STPClient.STPClient("224.0.10.200", 8888);
-        static Dictionary<string, string> clientMap = new Dictionary<string, string>();
+        ObservableCollection<string> clientIP = new ObservableCollection<string>();
+        static Dictionary<string, JObject> clientMap = new Dictionary<string, JObject>();
         List<string> test = new List<string>();
         void onMulticastMsg(JObject obj) {
-            Console.WriteLine("222 {0} 传来消息 {1}  ", obj["server-ip"],  obj["msg"]);
-            clientMap[obj["server-ip"].ToString()] =  obj["server-ip"].ToString();
+            if (!clientMap.ContainsKey(obj["server-ip"].ToString())) {
+                clientMap[obj["server-ip"].ToString()] = obj;
+                Action<string> actionDelegate = (x) => { clientIP.Add(x); };
+                listBox.Dispatcher.Invoke(actionDelegate, obj["server-ip"].ToString());
+            }
+            
             JObject msg = new JObject();
             msg["c#-test"] = "123456";
             msg = client.Request("test-topic", msg);
@@ -37,11 +43,18 @@ namespace IPC_MVR_Manager
         }
         public MainWindow()
         {
-            client.Connect("192.168.10.74", 8098);
+            //client.Connect("192.168.10.74", 8098);
             client.ListenMultiCastMsg(onMulticastMsg);
             client.Start();
             InitializeComponent();
-            listBox.ItemsSource = clientMap;
+            listBox.ItemsSource = clientIP;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            
+            Console.WriteLine("==== {0} ", listBox.SelectedItem);
+            client.Connect(listBox.SelectedItem.ToString(), clientMap[listBox.SelectedItem.ToString()].Value<UInt16>("port"));
         }
     }
 }

@@ -39,6 +39,7 @@ struct cf_stp_server{
     struct cf_json* m_multicast_msg;
     uint32_t m_multi_addr;
     uint16_t m_multi_port;
+    uint16_t m_server_port;
 };
 struct cf_stp_context{
     int m_socket;
@@ -254,6 +255,7 @@ int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* m
     server->m_server_socket = -1;
     server->m_multi_addr = 0;
     server->m_multi_port = multicast_port;
+    server->m_server_port = port;
     server->m_multicast_msg = cf_json_create_object();
     cf_json_add_string_to_object(server->m_multicast_msg,"multicast-msg","this is a test");
 
@@ -384,6 +386,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
             {
                 multi_json = cf_json_create_object();
                 cf_json_add_item_to_object(multi_json,"msg",server->m_multicast_msg);
+                cf_json_add_int_to_object(multi_json,"port",server->m_server_port);
             }
             
             struct sockaddr_in sock_addr;
