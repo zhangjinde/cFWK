@@ -39,12 +39,15 @@ namespace IPC_MVR_Manager.STPClient
 			}
 			
 		}
-		public void WriteBinary(byte[] data) {
-			byte[] buff = new byte[data.Length+8];
-			Array.Copy( BitConverter.GetBytes((UInt32)(data.Length + 4)),buff,4);
+		public void WriteBinary(byte[] data, int offset, int count) {
+			byte[] buff = new byte[count + 8];
+			Array.Copy(BitConverter.GetBytes((UInt32)(count + 4)), buff, 4);
 			buff[4] = 1;
-			Array.Copy(data,0,buff,8,data.Length);
-			mClientSocket.GetStream().Write(buff,0,buff.Length);
+			Array.Copy(data, offset, buff, 8, count);
+			mClientSocket.GetStream().Write(buff, 0, buff.Length);
+		}
+		public void WriteBinary(byte[] data) {
+			WriteBinary(data, 0, data.Length);
 		}
 		public JObject Request(string topic,JObject msg)
 		{
