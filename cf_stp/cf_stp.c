@@ -1,8 +1,3 @@
-#include "cf_stp.h"
-#include "cf_allocator/cf_allocator_simple.h"
-#include "cf_collection/cf_hash.h"
-#include "cf_collection/cf_vector.h"
-#include "cf_util/cf_util.h"
 #include <stdint.h>
 #include <unistd.h>
 #include<stdio.h>
@@ -13,7 +8,14 @@
 #include<sys/socket.h>     
 #include<arpa/inet.h>  
 #include<sys/select.h>   
-#include<netinet/in.h> 
+#include<netinet/in.h>
+
+#include "cf_stp.h"
+#include "cf_allocator/cf_allocator_simple.h"
+#include "cf_collection/cf_hash.h"
+#include "cf_collection/cf_vector.h"
+#include "cf_util/cf_util.h"
+ 
 
 #include "cf_collection/cf_list.h"
 #include "cf_json/cf_json.h"
@@ -130,7 +132,7 @@ err1:
 }
 struct cf_stp_client*  cf_stp_client_create(const char* multicast_addr ,uint16_t multicast_port)
 {
-    struct cf_stp_client* client = cf_allocator_simple_alloc(sizeof(struct cf_stp_client));
+    struct cf_stp_client* client = (struct cf_stp_client*)cf_allocator_simple_alloc(sizeof(struct cf_stp_client));
     int ret = cf_stp_client_init(client,multicast_addr,multicast_port);
     if(ret < 0)
     {
@@ -175,8 +177,8 @@ struct cf_json* cf_stp_client_request(struct cf_stp_client* client,const char* t
     const char* request_str = cf_json_print(request);
     cf_vector_resize(byte_vector,strlen(request_str)+sizeof(uint32_t)+sizeof(uint32_t)+5);
     *(uint32_t*)cf_vector_buffer(byte_vector) = cf_vector_length(byte_vector)-sizeof(uint32_t);
-    *(uint8_t*)(cf_vector_buffer(byte_vector)+sizeof(uint32_t)) = 0;
-    strcpy(cf_vector_buffer(byte_vector)+sizeof(uint32_t)+sizeof(uint32_t),request_str);
+    *((uint8_t*)cf_vector_buffer(byte_vector)+sizeof(uint32_t)) = 0;
+    strcpy((char*)cf_vector_buffer(byte_vector)+sizeof(uint32_t)+sizeof(uint32_t),request_str);
     ssize_t count = write(client->m_cli_socket,cf_vector_buffer(byte_vector),cf_vector_length(byte_vector));
     cf_json_destroy_object(request);
     if(count < cf_vector_length(byte_vector))
@@ -190,7 +192,7 @@ struct cf_json* cf_stp_client_request(struct cf_stp_client* client,const char* t
         return NULL;
     }
     cf_vector_resize(byte_vector,pendings_size);
-    char* ptr = cf_vector_buffer(byte_vector);
+    char* ptr = (char*)cf_vector_buffer(byte_vector);
     do{
         count = read(client->m_cli_socket,ptr,pendings_size);
         if(count < 0)
@@ -207,7 +209,7 @@ struct cf_json* cf_stp_client_request(struct cf_stp_client* client,const char* t
     {
         return NULL;
     }
-    struct cf_json* response = cf_json_load(cf_vector_buffer(byte_vector));
+    struct cf_json* response = cf_json_load((char*)cf_vector_buffer(byte_vector));
     // struct cf_json* response_reply = cf_json_detach_item(response,"reply");
     // cf_json_destroy_object(response);
     return response;
@@ -222,8 +224,8 @@ int cf_stp_client_write_binary(struct cf_stp_client* client,const uint8_t* data,
     cf_vector_resize(byte_vector,data_len+sizeof(uint32_t)+sizeof(uint32_t));
 
     *(uint32_t*)cf_vector_buffer(byte_vector) = cf_vector_length(byte_vector)-sizeof(uint32_t);
-    *(uint8_t*)(cf_vector_buffer(byte_vector)+sizeof(uint32_t)) = 1;
-    memcpy(cf_vector_buffer(byte_vector)+sizeof(uint32_t)+sizeof(uint32_t),data,data_len);
+    *((uint8_t*)cf_vector_buffer(byte_vector)+sizeof(uint32_t)) = 1;
+    memcpy((uint8_t*)cf_vector_buffer(byte_vector)+sizeof(uint32_t)+sizeof(uint32_t),data,data_len);
     ssize_t count = write(client->m_cli_socket,cf_vector_buffer(byte_vector),cf_vector_length(byte_vector));
     if(count < cf_vector_length(byte_vector))
     {
@@ -251,6 +253,7 @@ static struct cf_json* stp_server_file_upload_opt(struct cf_stp_context* context
 int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* multicast_addr ,uint16_t multicast_port)
 {
     int err;
+    int opt = 1;
     server->m_multicast_socket = -1;
     server->m_server_socket = -1;
     server->m_multi_addr = 0;
@@ -286,8 +289,7 @@ int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* m
     local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     local_addr.sin_port = htons(port);
 
-    /*绑定socket*/
-    int opt = 1;
+    opt = 1;
     setsockopt(server->m_server_socket,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(opt)); //使能地址重用模式
     err = bind(server->m_server_socket,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
     if(err < 0)
@@ -316,7 +318,7 @@ err1:
 struct cf_stp_server* cf_stp_server_create(uint16_t port ,const char* multicast_addr ,uint16_t multicast_port)
 {
 
-    struct cf_stp_server* server = cf_allocator_simple_alloc(sizeof(struct cf_stp_server));
+    struct cf_stp_server* server = (struct cf_stp_server*)cf_allocator_simple_alloc(sizeof(struct cf_stp_server));
     int ret = cf_stp_server_init(server, port , multicast_addr , multicast_port);
     if(ret != 0)
     {
@@ -346,9 +348,9 @@ void cf_stp_server_set_multicast_msg(struct cf_stp_server* server,struct cf_json
     server->m_multicast_msg = msg;
 }
 //proccessor 返回的cf_json不需要释放，会在处理流程框架自动释放
-void cf_stp_server_listen(struct cf_stp_server* server, char* topic,struct cf_json* (*proccessor)(struct cf_stp_context* ,struct cf_json*))
+void cf_stp_server_listen(struct cf_stp_server* server,const char* topic,struct cf_json* (*proccessor)(struct cf_stp_context* ,struct cf_json*))
 {
-    cf_hash_insert(server->m_processors,topic,proccessor); 
+    cf_hash_insert(server->m_processors,(void*)(unsigned long)topic,(void*)proccessor); 
 }
 
 
@@ -360,7 +362,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
         FD_ZERO(&r_set);
         FD_SET(server->m_server_socket,&r_set);
         for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
-            struct cf_stp_context* context = cf_iterator_get(&iter);
+            struct cf_stp_context* context = (struct cf_stp_context*)cf_iterator_get(&iter);
             FD_SET(context->m_socket,&r_set);
         }
         struct timeval timeout;
@@ -409,7 +411,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
             }
             else
             {
-                struct cf_stp_context* context = cf_allocator_simple_alloc(sizeof(struct cf_stp_context));
+                struct cf_stp_context* context = (struct cf_stp_context*)cf_allocator_simple_alloc(sizeof(struct cf_stp_context));
                 context->m_socket = cli_sock;
                 cf_list_push(cli_list,(void*)context);
                 //COMM_LOG("accept client %s:%hu\n",inet_ntoa(cli_addr.sin_addr),cli_addr.sin_port);
@@ -439,7 +441,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                 if(byte_vector == NULL)
                     byte_vector = cf_vector_create(1,0);
                 cf_vector_resize(byte_vector,pending_size);
-                uint8_t* ptr = cf_vector_buffer(byte_vector);
+                uint8_t* ptr = (uint8_t*)cf_vector_buffer(byte_vector);
                 do{
                     count = read(context->m_socket,ptr,pending_size);
                     if(count <= 0)
@@ -460,12 +462,12 @@ int cf_stp_server_run(struct cf_stp_server* server){
                 uint8_t transfer_mod = ((uint8_t*)cf_vector_buffer(byte_vector))[0];
                 if(transfer_mod == 0)//json mode
                 {
-                    struct cf_json* json = cf_json_load(cf_vector_buffer(byte_vector)+4);
+                    struct cf_json* json = (struct cf_json*)cf_json_load((char*)cf_vector_buffer(byte_vector)+4);
                     if(json == NULL)
                         continue;
                     int seq = cf_json_get_int(json,"seq",NULL);
                     char* topic = cf_json_get_string(json,"topic",NULL);
-                    struct cf_json* (*proccessor)(struct cf_stp_context*,struct cf_json* ) = cf_hash_get(server->m_processors,topic,NULL); 
+                    struct cf_json* (*proccessor)(struct cf_stp_context*,struct cf_json* ) = (struct cf_json* (*)(struct cf_stp_context*,struct cf_json* ))cf_hash_get(server->m_processors,topic,NULL); 
                     if(proccessor == NULL)
                     {
                         cf_json_destroy_object(json);
@@ -482,7 +484,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     cf_vector_resize(byte_vector,json_str_size+sizeof(uint32_t)+1);
                     ((uint8_t*)cf_vector_buffer(byte_vector))[cf_vector_length(byte_vector)-1] = 0;
                     (*(uint32_t*)cf_vector_buffer(byte_vector)) = cf_vector_length(byte_vector) - sizeof(uint32_t);
-                    strcpy(cf_vector_buffer(byte_vector)+sizeof(uint32_t),json_str);
+                    strcpy((char*)cf_vector_buffer(byte_vector)+sizeof(uint32_t),json_str);
                     count = write(context->m_socket,cf_vector_buffer(byte_vector),cf_vector_length(byte_vector));
                     cf_json_destroy_object(respone);
                     
@@ -501,7 +503,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     size_t byte_len = cf_vector_length(byte_vector) - 4;
                     if(context->m_fd)
                     {
-                        ssize_t size = fwrite(cf_vector_buffer(byte_vector)+4,1,byte_len,context->m_fd);
+                        ssize_t size = fwrite((uint8_t*)cf_vector_buffer(byte_vector)+4,1,byte_len,context->m_fd);
                         printf("write file %ld bytes\n",size);
 
 
@@ -564,7 +566,7 @@ void stp_client_multi_test(void* d){
 void stp_client_test(void* d){
     struct cf_json* msg = NULL;
     struct cf_json* ack = NULL;
-    const char* file_name = d;
+    const char* file_name = (char*)d;
     struct cf_stp_client* client = cf_stp_client_create(NULL,0);
     int ret = cf_stp_client_connect(client,"127.0.0.1",8098);
     if(ret != 0 )

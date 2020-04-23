@@ -1,5 +1,10 @@
 #ifndef CF_JSON_H
 #define CF_JSON_H
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 struct cf_json;
 struct cf_json* cf_json_load(const char* str);
 struct cf_json* cf_json_create_object();
@@ -14,4 +19,9 @@ struct cf_json* cf_json_get_item(struct cf_json *object, const char * const name
 char* cf_json_to_string(struct cf_json *object);
 int cf_json_get_int(struct cf_json *object, const char * const name,int* err);
 char* cf_json_get_string(struct cf_json *object, const char * const name,int* err);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif//CF_JSON_H

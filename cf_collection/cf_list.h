@@ -2,7 +2,12 @@
 #define CF_LIST_H
 
 #include <stdbool.h>
+
 #include "cf_iterator.h"
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 struct cf_list;
 struct cf_list* cf_list_create(void (*free_data)(void*));
 void cf_list_delete(struct cf_list* list);
@@ -13,5 +18,8 @@ size_t cf_list_length(const struct cf_list*);
 
 struct cf_iterator cf_list_begin(struct cf_list* list);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif//CF_LIST_H

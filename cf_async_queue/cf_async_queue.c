@@ -2,6 +2,7 @@
 #include "cf_async_queue.h"
 #include "cf_collection/cf_list.h"
 #include <pthread.h>
+
 struct cf_async_queue{
     pthread_mutex_t m_mutex;
     pthread_cond_t  m_condition;
@@ -9,7 +10,7 @@ struct cf_async_queue{
 
 };
 struct cf_async_queue* cf_async_queue_create(void (*free_data)(void*)){
-    struct cf_async_queue* queue = cf_allocator_simple_alloc(sizeof(struct cf_async_queue));
+    struct cf_async_queue* queue = (struct cf_async_queue*)cf_allocator_simple_alloc(sizeof(struct cf_async_queue));
     if(queue)
     {
         pthread_mutex_init(&queue->m_mutex,NULL); 

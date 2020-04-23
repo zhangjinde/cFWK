@@ -12,7 +12,7 @@ struct cf_vector{
 };
 
 struct cf_vector* cf_vector_create(size_t elem_size,size_t count){
-    struct cf_vector* vector = cf_allocator_simple_alloc(sizeof(struct cf_vector));
+    struct cf_vector* vector = (struct cf_vector*)cf_allocator_simple_alloc(sizeof(struct cf_vector));
     size_t capacity = elem_size*count;
     if(capacity < CF_VECTOR_DEFAULT_BUFF_SIZE)
         capacity = CF_VECTOR_DEFAULT_BUFF_SIZE;
@@ -59,7 +59,7 @@ int cf_vector_append(struct cf_vector* vector,void* array,size_t count)
     ret = cf_vector_resize(vector,vector->m_elem_count+count);
     if(ret == 0)
     {
-        memcpy(vector->m_buffer+vector->m_elem_size*vector->m_elem_count,array,vector->m_elem_size*count);
+        memcpy((uint8_t*)vector->m_buffer+vector->m_elem_size*vector->m_elem_count,array,vector->m_elem_size*count);
     }
     return ret;
 }
@@ -78,12 +78,12 @@ static void next(struct cf_iterator* iter){
 }
 static void _remove(struct cf_iterator* iter){
     struct cf_vector* v = (struct cf_vector*)iter->m_container;
-    memmove(v->m_buffer+(long)iter->m_priv * v->m_elem_size,v->m_buffer+(long)(iter->m_priv+1) * v->m_elem_size,v->m_elem_size*(v->m_elem_count-(long)iter->m_priv-1));
+    memmove((uint8_t*)v->m_buffer+(long)iter->m_priv * v->m_elem_size,(uint8_t*)v->m_buffer+(long)((uint8_t*)iter->m_priv+1) * v->m_elem_size,v->m_elem_size*(v->m_elem_count-(long)iter->m_priv-1));
     iter->m_priv = (void*)(((size_t)iter->m_priv)-1);
 }
 static void* get(struct cf_iterator* iter){
     struct cf_vector* v = (struct cf_vector*)iter->m_container;
-    return v->m_buffer+(long)iter->m_priv * v->m_elem_size;
+    return (uint8_t*)v->m_buffer+(long)iter->m_priv * v->m_elem_size;
 }
 
 static const struct cf_iterator_vt cf_vector_iterator_vt = 
@@ -99,10 +99,9 @@ static const struct cf_iterator_vt cf_vector_iterator_vt =
 
 struct cf_iterator cf_vector_begin(struct cf_vector* v)
 {
-    struct cf_iterator iter = {
-        .m_priv = 0,
-        .m_vt = &cf_vector_iterator_vt,
-        .m_container = v
-    };
+    struct cf_iterator iter;
+    iter.m_priv = 0;
+    iter.m_vt = &cf_vector_iterator_vt;
+    iter.m_container = v;
     return iter;
 }

@@ -1,7 +1,9 @@
 #include<stdint.h>
 #include<string.h>
+#include "cf_collection/cf_hash.h"
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_collection/cf_list.h"
+
 #define CF_DEFAULT_HASH_WIDTH 20
 
 struct _hash_item
@@ -9,6 +11,7 @@ struct _hash_item
     void* key;
     void* value;
 };
+
 struct cf_hash
 {
     size_t (*m_hash_func)(void*);
@@ -22,17 +25,20 @@ struct cf_hash
     //每一个item对应一bit，0表示未冲突，1表示冲突，如果冲突，则对应value实际为冲突list指针
     uint8_t m_conflict_flag[CF_DEFAULT_HASH_WIDTH/8 + (CF_DEFAULT_HASH_WIDTH%8 > 0)];   
 };
+
 size_t cf_hash_str_hash(void* key){
     uint32_t sum = 0;
-    uint8_t* s = key;
+    uint8_t* s = (uint8_t*)key;
     while(*s) sum+=*s++;
     return sum%CF_DEFAULT_HASH_WIDTH;
 }
+
 bool cf_hash_str_equal(void* key1,void* key2){
-    return strcmp(key1,key2) == 0 ? true : false;
+    return strcmp((const char*)key1,(const char*)key2) == 0 ? true : false;
 }
+
 struct cf_hash* cf_hash_create(size_t (*hash_func)(void*),bool (*key_equal_func)(void*,void*),void (*key_free_func)(void*),void (*value_free_func)(void*)){
-    struct cf_hash* hash = cf_allocator_simple_alloc(sizeof(struct cf_hash));
+    struct cf_hash* hash = (struct cf_hash*)cf_allocator_simple_alloc(sizeof(struct cf_hash));
     memset(hash,0,sizeof(struct cf_hash));
     hash->m_hash_func = hash_func;
     hash->m_key_equal_func = key_equal_func;
@@ -48,15 +54,15 @@ void cf_hash_delete(struct cf_hash* hash){
             {
                 if(hash->m_conflict_flag[inx/8] & (1 << (inx%8))) //key对应hash索引冲突
                 {
-                    while(cf_list_length(hash->m_items[inx].value) > 0){
-                        struct _hash_item* item = cf_list_take_front(hash->m_items[inx].value);
+                    while(cf_list_length((struct cf_list*)hash->m_items[inx].value) > 0){
+                        struct _hash_item* item = (struct _hash_item*)cf_list_take_front((struct cf_list*)hash->m_items[inx].value);
                         if(hash->m_key_free_func)
                             hash->m_key_free_func(item->key);
                         if(hash->m_value_free_func)    
                             hash->m_value_free_func(item->value);
                         cf_allocator_simple_free(item);
                     }
-                    cf_list_delete(hash->m_items[inx].value);
+                    cf_list_delete((struct cf_list*)hash->m_items[inx].value);
                 }
                 else
                 {
@@ -77,10 +83,10 @@ void cf_hash_insert(struct cf_hash* hash,void* key,void* value){
     {
         if(hash->m_conflict_flag[inx/8] & (1 << (inx%8))) //key对应hash索引冲突
         {
-            struct cf_iterator iter = cf_list_begin(hash->m_items[inx].value);
+            struct cf_iterator iter = cf_list_begin((struct cf_list*)hash->m_items[inx].value);
             for(;!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
             {
-                struct _hash_item* item = cf_iterator_get(&iter);
+                struct _hash_item* item = (struct _hash_item*)cf_iterator_get(&iter);
                 if(hash->m_key_equal_func(item->key,key))
                 {
                     item->value = value;    //在冲突list找到对应key，替换value
@@ -88,10 +94,10 @@ void cf_hash_insert(struct cf_hash* hash,void* key,void* value){
                 }
             }
             if(cf_iterator_is_end(&iter)){ //冲突list未找到对应key,则追加新_hash_item
-                struct _hash_item* item = cf_allocator_simple_alloc(sizeof(struct _hash_item));
+                struct _hash_item* item = (struct _hash_item*)cf_allocator_simple_alloc(sizeof(struct _hash_item));
                 item->key = key;
                 item->value = value;
-                cf_list_push(hash->m_items[inx].value,item);
+                cf_list_push((struct cf_list*)hash->m_items[inx].value,item);
             }
 
         }
@@ -102,12 +108,12 @@ void cf_hash_insert(struct cf_hash* hash,void* key,void* value){
         else {  //未冲突，key不相等则作冲突化处理，创建冲突list，同时把旧的key，value及新的key，value同时加入冲突list
             hash->m_conflict_flag[inx/8] |= (1 << (inx%8));
             struct cf_list* list = cf_list_create(NULL); //list内的struct _hash_item需要在链表外部精确删除，因为需要调用相应的key/value free函数
-            struct _hash_item* item = cf_allocator_simple_alloc(sizeof(struct _hash_item));
+            struct _hash_item* item = (struct _hash_item*)cf_allocator_simple_alloc(sizeof(struct _hash_item));
             item->key = hash->m_items[inx].key;
             item->value = hash->m_items[inx].value;
             cf_list_push(list,item);
 
-            item = cf_allocator_simple_alloc(sizeof(struct _hash_item));
+            item = (struct _hash_item*)cf_allocator_simple_alloc(sizeof(struct _hash_item));
             item->key = key;
             item->value = value;
             cf_list_push(list,item);
@@ -130,10 +136,10 @@ void* cf_hash_get(struct cf_hash* hash, void* key,int* error)
     {
         if(hash->m_conflict_flag[inx/8] & (1 << (inx%8))) //key对应hash索引冲突
         {
-            struct cf_iterator iter = cf_list_begin(hash->m_items[inx].value);
+            struct cf_iterator iter = cf_list_begin((struct cf_list*)hash->m_items[inx].value);
             for(;!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
             {
-                struct _hash_item* item = cf_iterator_get(&iter);
+                struct _hash_item* item = (struct _hash_item*)cf_iterator_get(&iter);
                 if(hash->m_key_equal_func(item->key,key))
                 {
                     return item->value;

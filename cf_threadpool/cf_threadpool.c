@@ -1,7 +1,9 @@
+#include <pthread.h>
+
 #include "cf_threadpool.h"
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_async_queue/cf_async_queue.h"
-#include <pthread.h>
+
 struct _thread_item
 {
     pthread_t m_thread;
@@ -16,7 +18,7 @@ static void* _thread_item_run(void* arg){
     struct _thread_item *_this = (struct _thread_item*)arg;
     
     while(true){
-        void (*func)(void*) = cf_async_queue_pop(_this->m_queue);
+        void (*func)(void*) = (void (*)(void*))cf_async_queue_pop(_this->m_queue);
         func(_this->m_data);
         _this->m_data = NULL;
         pthread_mutex_lock(&_this->m_mutex);
@@ -28,7 +30,7 @@ static bool _thread_item_start(struct _thread_item* item,void (*run)(void*),void
     int ret = pthread_mutex_trylock(&item->m_mutex);
     if(ret == 0){
         item->m_data = d;
-        cf_async_queue_push(item->m_queue,run);
+        cf_async_queue_push(item->m_queue,(void*)run);
     }
     return ret == 0 ? true : false;
 }
@@ -38,7 +40,7 @@ static struct _thread_item* _create_thread_item(){
     if(item)
     {
         item->m_isbusy = false;
-        item->m_queue = cf_async_queue_create();
+        item->m_queue = cf_async_queue_create(NULL);
         pthread_create(&item->m_thread,0,_thread_item_run,item);
         pthread_mutex_init(&item->m_mutex,NULL);
     }
@@ -75,7 +77,7 @@ struct cf_threadpool* cf_threadpool_create(size_t thread_count)
 int cf_threadpool_start(struct cf_threadpool* threadpool,void (*run)(void*),void* d){
     for(struct cf_iterator iter = cf_list_begin(threadpool->m_threads);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
     {
-        struct  _thread_item*  item = cf_iterator_get(&iter);
+        struct  _thread_item*  item = (struct  _thread_item*)cf_iterator_get(&iter);
         
         if(_thread_item_start(item,run,d) == true)
             return 0;
@@ -104,7 +106,7 @@ static struct cf_async_queue* aq = NULL;
 static void test_consumer(void* d){
     while(true)
     {
-        const char* str =  cf_async_queue_pop(aq);
+        const char* str =  (char*)cf_async_queue_pop(aq);
         printf("recv str=%s\n",str);
         sleep(1);
     }
@@ -130,7 +132,7 @@ static void test_loop_print(void* d){
 void util_test(){
     aq = cf_async_queue_create();
     cf_threadpool_run(test_loop_print,NULL);
-    cf_threadpool_run(test_producer,"123");
+    cf_threadpool_run(test_producer,(void*)"123");
     cf_threadpool_run(test_consumer,NULL);
 }
 int main(){
