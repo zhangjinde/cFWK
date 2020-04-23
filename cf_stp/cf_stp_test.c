@@ -13,6 +13,7 @@
 #include "cf_json/cf_json.h"
 #include "cf_threadpool/cf_threadpool.h"
 #include "cf_std.h"
+#include "cf_stp.h"
 struct cf_json* proccessor(struct cf_stp_context* context,struct cf_json*json){
     cf_unused(context);
     printf("%s\n",cf_json_print(json));

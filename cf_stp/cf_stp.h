@@ -1,6 +1,7 @@
 #ifndef CF_STP_H
 #define CF_STP_H
-
+#include <stdint.h>
+#include <stddef.h>
 #include "cf_json/cf_json.h"
 
 #define CF_STP_SERVER_RECV_BUFF_SIZE    256
