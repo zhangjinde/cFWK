@@ -26,6 +26,7 @@ namespace IPC_MVR_Manager
     public partial class MainWindow : Window
     {
         static STPClient.STPClient client = new STPClient.STPClient("224.0.10.200", 8888);
+        //static STPClient.STPClient client = new STPClient.STPClient("255.255.255.255", 8888);
         ObservableCollection<string> clientIP = new ObservableCollection<string>();
         static Dictionary<string, JObject> clientMap = new Dictionary<string, JObject>();
         List<string> test = new List<string>();
@@ -110,7 +111,7 @@ namespace IPC_MVR_Manager
             System.IO.FileInfo fileInfo = new System.IO.FileInfo(file_path);
             int size = (int)fileInfo.Length;
             JObject msg = new JObject();
-            msg["file-name"] = "./test_file";
+            msg["file-name"] = "/usr/Hseries/config/upgrade.tar";
             msg["file-len"] = size;
             JObject ack = client.Request("file-upload", msg);
             if (ack != null && ack["reply"]["ack"].ToString() == "ok")
@@ -125,8 +126,6 @@ namespace IPC_MVR_Manager
                     size -= count;
                 }
             }
-
-
         }
 
         private void Button_Click_4(object sender, RoutedEventArgs e)

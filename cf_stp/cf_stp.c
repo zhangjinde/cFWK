@@ -501,7 +501,10 @@ int cf_stp_server_run(struct cf_stp_server* server){
                         cf_json_destroy_object(json);
                         continue;
                     }
-                    struct cf_json* reply = proccessor(context,cf_json_get_item(json,"msg"));
+                    struct cf_json*  reply = NULL;
+                    if(proccessor){
+                        reply = proccessor(context,cf_json_get_item(json,"msg"));
+                    }
                     cf_json_destroy_object(json);
                     struct cf_json* respone = cf_json_create_object();
                     if(reply)
@@ -570,7 +573,8 @@ static struct cf_json* proccessor(struct cf_stp_context* context,struct cf_json*
 }
 static void stp_server_test(void* d){
     cf_unused(d);
-    struct cf_stp_server* server = cf_stp_server_create(8098,"224.0.10.200",8888);
+    //struct cf_stp_server* server = cf_stp_server_create(9851,"224.0.10.200",8888);
+    struct cf_stp_server* server = cf_stp_server_create(9851,"255.255.255.255",8888);
     struct cf_json* multicast_msg = cf_json_create_object();
 
     cf_json_add_string_to_object(multicast_msg,"mcu-ver", "app197004201920");
@@ -600,7 +604,7 @@ static void stp_client_test(void* d){
     struct cf_json* ack = NULL;
     const char* file_name = (char*)d;
     struct cf_stp_client* client = cf_stp_client_create(NULL,0);
-    int ret = cf_stp_client_connect(client,"127.0.0.1",8098);
+    int ret = cf_stp_client_connect(client,"127.0.0.1",9851);
     if(ret != 0 )
     {
         perror("client connect error: ");
@@ -671,7 +675,7 @@ int main(int argc,const char* argv[]){
     if(argc > 1)
         d = argv[1];
     
-    //cf_threadpool_run(stp_client_test,( void*)d);
+    cf_threadpool_run(stp_client_test,( void*)d);
     while(true){
         sleep(1);
         printf("alloc_size=%ld\n",cf_allocator_alloc_size());

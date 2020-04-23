@@ -20,13 +20,14 @@ namespace IPC_MVR_Manager.STPClient
 		{
 			mMulticastSocket = new UdpClient();
 			IPAddress ipaddr = IPAddress.Parse(multicastAddr);
-			if (ipaddr == IPAddress.Broadcast)
+			mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+			if (ipaddr.Equals(IPAddress.Broadcast))
 			{
 				mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
 			}
 			else
 			{
-				mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+				
 				mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Any);
 				//mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Parse("192.168.10.74"));
 			}
