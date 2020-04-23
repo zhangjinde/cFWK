@@ -71,19 +71,19 @@ void cf_vector_delete(struct cf_vector* vector)
     cf_allocator_simple_free(vector);
 }
 static bool is_end(struct cf_iterator* iter){
-    return (int64_t)iter->m_priv == ((struct cf_vector*)iter->m_container)->m_elem_count;
+    return (long)iter->m_priv == ((struct cf_vector*)iter->m_container)->m_elem_count;
 }
 static void next(struct cf_iterator* iter){
-    iter->m_priv = (void*)(((int64_t)iter->m_priv)+1);   
+    iter->m_priv = (void*)(((long )iter->m_priv)+1);   
 }
 static void _remove(struct cf_iterator* iter){
     struct cf_vector* v = (struct cf_vector*)iter->m_container;
-    memmove(v->m_buffer+(int64_t)iter->m_priv * v->m_elem_size,v->m_buffer+(int64_t)(iter->m_priv+1) * v->m_elem_size,v->m_elem_size*(v->m_elem_count-(int64_t)iter->m_priv-1));
+    memmove(v->m_buffer+(long)iter->m_priv * v->m_elem_size,v->m_buffer+(long)(iter->m_priv+1) * v->m_elem_size,v->m_elem_size*(v->m_elem_count-(long)iter->m_priv-1));
     iter->m_priv = (void*)(((size_t)iter->m_priv)-1);
 }
 static void* get(struct cf_iterator* iter){
     struct cf_vector* v = (struct cf_vector*)iter->m_container;
-    return v->m_buffer+(int64_t)iter->m_priv * v->m_elem_size;
+    return v->m_buffer+(long)iter->m_priv * v->m_elem_size;
 }
 
 static const struct cf_iterator_vt cf_vector_iterator_vt = 
