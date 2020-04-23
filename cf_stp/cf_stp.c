@@ -69,7 +69,6 @@ int cf_stp_client_init(struct cf_stp_client* client,const char* multicast_addr ,
 {
     int err;
     struct sockaddr_in local_addr;
-    struct ip_mreq mreq1;
     client->m_multicast_socket = -1;
     client->m_cli_socket = -1;
     client->m_seq = 1;
@@ -102,7 +101,6 @@ int cf_stp_client_init(struct cf_stp_client* client,const char* multicast_addr ,
         struct ip_mreq mreq;                                /*加入多播组*/
         mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);  /*多播地址*/
         mreq.imr_interface.s_addr = htonl(INADDR_ANY);      /*网络接口为默认*/
-        //mreq.imr_interface.s_addr = inet_addr("192.168.10.74");      /*网络接口为默认*/
         /*将本机加入多播组*/
         err = setsockopt(client->m_multicast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
         if (err < 0)
@@ -271,11 +269,12 @@ int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* m
             perror("socket()");
             goto err1;
         }
-        
+
         memset(&local_addr, 0, sizeof(local_addr));
         local_addr.sin_family = AF_INET;
         local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        local_addr.sin_port = htons(multicast_port);
+        local_addr.sin_port = 0;
+        bind(server->m_multi_addr,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
     }
     server->m_server_socket = socket(AF_INET, SOCK_STREAM, 0);         /*建立套接字*/
     if (server->m_server_socket == -1)
@@ -533,24 +532,28 @@ int cf_stp_server_run(struct cf_stp_server* server){
 #include <unistd.h>
 #include "cf_threadpool/cf_threadpool.h"
 #include "cf_std.h"
-struct cf_json* proccessor(struct cf_stp_context* context,struct cf_json*json){
+static struct cf_json* proccessor(struct cf_stp_context* context,struct cf_json*json){
     cf_unused(context);
     printf("%s\n",cf_json_print(json));
     struct cf_json* reply = cf_json_create_object();
     cf_json_add_string_to_object(reply,"ack","this ok");
     return reply;
 }
-void stp_server_test(void* d){
+static void stp_server_test(void* d){
     cf_unused(d);
     struct cf_stp_server* server = cf_stp_server_create(8098,"224.0.10.200",8888);
     struct cf_json* multicast_msg = cf_json_create_object();
-    cf_json_add_string_to_object(multicast_msg,"test-multicast","123");
+
+    cf_json_add_string_to_object(multicast_msg,"mcu-ver", "app197004201920");
+    cf_json_add_string_to_object(multicast_msg,"fpga-ver","app197005210918");
+    cf_json_add_string_to_object(multicast_msg,"dev","ipc");
+    cf_json_add_int_to_object(multicast_msg,"slot-id",16);
     cf_stp_server_set_multicast_msg(server,multicast_msg);
     cf_stp_server_listen(server,"test-topic",proccessor);
     cf_stp_server_run(server);
     cf_stp_server_destroy(server);
 }
-void stp_client_multi_test(void* d){
+static void stp_client_multi_test(void* d){
     cf_unused(d);
     struct cf_stp_client* client = cf_stp_client_create("224.0.10.200",8888);
     while(true){
@@ -563,7 +566,7 @@ void stp_client_multi_test(void* d){
     }
     cf_stp_client_destroy(client);
 }
-void stp_client_test(void* d){
+static void stp_client_test(void* d){
     struct cf_json* msg = NULL;
     struct cf_json* ack = NULL;
     const char* file_name = (char*)d;
@@ -631,7 +634,7 @@ void stp_client_test(void* d){
 }
 int main(int argc,const char* argv[]){
     cf_threadpool_run(stp_server_test,NULL);
-    //cf_threadpool_run(stp_client_multi_test,NULL);
+    cf_threadpool_run(stp_client_multi_test,NULL);
     sleep(1);
     const void* d = NULL;
     d = "cf_stp/cf_stp_test";

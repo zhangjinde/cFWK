@@ -99,5 +99,16 @@ namespace IPC_MVR_Manager
 
 
         }
+
+        private void listBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string dev_ip = listBox.SelectedItem.ToString();
+            JObject obj = clientMap[dev_ip].Value("msg");
+            textDev.Text = obj.Value<String>("dev");
+            textMCU.Text = obj.Value<String>("mcu-ver");
+            textFPGA.Text = obj.Value<String>("fpga-ver");
+            textSlotId.Text = obj.Value<String>("slot-id");
+            
+        }
     }
 }

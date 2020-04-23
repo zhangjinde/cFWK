@@ -20,8 +20,11 @@ namespace IPC_MVR_Manager.STPClient
 		{
 
 			mMulticastSocket = new UdpClient();
+			//mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
 			mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
-			mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr));
+			mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Any);
+			//mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Parse("192.168.191.1"));
+
 			mMulticastSocket.Client.Bind(new IPEndPoint(IPAddress.Any, multicastPort));
 
 			mClientSocket = new TcpClient();

@@ -44,6 +44,7 @@ struct cf_hash* cf_hash_create(size_t (*hash_func)(void*),bool (*key_equal_func)
     hash->m_key_equal_func = key_equal_func;
     hash->m_key_free_func = key_free_func;
     hash->m_value_free_func = value_free_func;
+    return hash;
 }
 
 void cf_hash_delete(struct cf_hash* hash){
@@ -168,6 +169,7 @@ void* cf_hash_get(struct cf_hash* hash, void* key,int* error)
             *error = -1;    //未找到对应key
         return NULL;
     }
+    return NULL;
 }
 
 #ifdef CF_HASH_TEST
