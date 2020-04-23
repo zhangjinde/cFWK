@@ -574,7 +574,7 @@ static void stp_server_test(void* d){
 
     cf_json_add_string_to_object(multicast_msg,"mcu-ver", "app197004201920");
     cf_json_add_string_to_object(multicast_msg,"fpga-ver","app197005210918");
-    cf_json_add_string_to_object(multicast_msg,"dev","ipc");
+    cf_json_add_string_to_object(multicast_msg,"dev","pc");
     cf_json_add_int_to_object(multicast_msg,"slot-id",16);
     cf_stp_server_set_multicast_msg(server,multicast_msg);
     cf_stp_server_listen(server,"test-topic",proccessor);
