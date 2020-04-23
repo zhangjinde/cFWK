@@ -97,8 +97,17 @@ namespace IPC_MVR_Manager
                     MessageBox.Show("输入地址有误，请输入正确的地址如 192.168.10.2:8888");
                     return;
                 }
-
-                client.Connect(addr[0].ToString(), UInt16.Parse(addr[1]));
+                try
+                {
+                    client.Connect(addr[0].ToString(), UInt16.Parse(addr[1]));
+                }
+                catch {
+                    MessageBox.Show("无法连接，请输入正确的地址如 192.168.10.2:8888");
+                    label.Foreground = new SolidColorBrush(Colors.Black);
+                    label.Content = "连接到:" + addr[0].ToString();
+                    return;
+                }
+                
                 if (client.IsConnected)
                 {
                     JObject obj = client.Request("query", null);
