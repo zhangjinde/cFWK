@@ -182,7 +182,8 @@ struct cf_json* cf_stp_client_request(struct cf_stp_client* client,const char* t
     struct cf_json* request = cf_json_create_object();
     cf_json_add_int_to_object(request,"seq",client->m_seq++);
     cf_json_add_string_to_object(request,"topic",topic);
-    cf_json_add_item_to_object(request,"msg",cf_json_clone(msg));
+    if(msg != NULL)
+        cf_json_add_item_to_object(request,"msg",cf_json_clone(msg));
     const char* request_str = cf_json_print(request);
     cf_vector_resize(byte_vector,strlen(request_str)+sizeof(uint32_t)+sizeof(uint32_t)+5);
     *(uint32_t*)cf_vector_buffer(byte_vector) = cf_vector_length(byte_vector)-sizeof(uint32_t);

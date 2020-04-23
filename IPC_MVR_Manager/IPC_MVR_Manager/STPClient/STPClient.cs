@@ -18,29 +18,55 @@ namespace IPC_MVR_Manager.STPClient
 		TcpClient mClientSocket = null;
 		public STPClient(String multicastAddr, UInt16 multicastPort)
 		{
-
 			mMulticastSocket = new UdpClient();
-			//mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
-			mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
-			mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Any);
-			//mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Parse("192.168.191.1"));
+			IPAddress ipaddr = IPAddress.Parse(multicastAddr);
+			if (ipaddr == IPAddress.Broadcast)
+			{
+				mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
+			}
+			else
+			{
+				mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+				mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Any);
+				//mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Parse("192.168.10.74"));
+			}
+			//
+
+
 
 			mMulticastSocket.Client.Bind(new IPEndPoint(IPAddress.Any, multicastPort));
 
-			mClientSocket = new TcpClient();
+			
+		}
+		public bool IsConnected {
+			get {
+				return mClientSocket != null && mClientSocket.Connected;
+			}
+			
 		}
 		public void Connect(string ipaddr,UInt16 port) {
 			//EndPoint serverAddr = new IPEndPoint(IPAddress.Parse(ipaddr), port);
 			try
 			{
+				mClientSocket = new TcpClient();
 				mClientSocket.Connect(ipaddr, port);
 			}
 
-			catch
+			catch (Exception e)
 			{
-				
+				Console.WriteLine("Error:"+e.ToString());
 			}
 			
+		}
+		public void Close()
+		{
+			//EndPoint serverAddr = new IPEndPoint(IPAddress.Parse(ipaddr), port);
+			if (!IsConnected)
+				return;
+			if(mClientSocket != null)
+				mClientSocket.Close();
+			mClientSocket = null;
+
 		}
 		public void WriteBinary(byte[] data, int offset, int count) {
 			byte[] buff = new byte[count + 8];
@@ -56,9 +82,11 @@ namespace IPC_MVR_Manager.STPClient
 		{
 			if (!mClientSocket.Connected)
 				return null;
+			
 			JObject obj = new JObject();
 			obj["topic"] = topic;
-			obj["msg"] = msg;
+			if (msg != null)
+				obj["msg"] = msg;
 			obj["seq"] = mSeq++;
 			string str = JsonConvert.SerializeObject(obj);
 			byte[] bytes = System.Text.Encoding.UTF8.GetBytes(str);
