@@ -503,7 +503,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     if(context->m_fd)
                     {
                         ssize_t size = fwrite((uint8_t*)cf_vector_buffer(byte_vector)+4,1,byte_len,context->m_fd);
-                        printf("write file %ld bytes\n",size);
+                        printf("write file %d bytes\n",(int)size);
 
 
                     }
