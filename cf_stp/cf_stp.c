@@ -246,7 +246,8 @@ int cf_stp_client_write_binary(struct cf_stp_client* client,const uint8_t* data,
 
 static struct cf_json* stp_server_file_upload_opt(struct cf_stp_context* context,struct cf_json* msg)
 {
-    context->m_fd = fopen(cf_json_get_string(msg,"file-name",NULL),"w");
+    char* file_name = cf_json_get_string(msg,"file-name",NULL);
+    context->m_fd = fopen(file_name,"w");
     struct cf_json* ack = cf_json_create_object();
     if(context->m_fd == NULL)
     {
@@ -441,6 +442,9 @@ int cf_stp_server_run(struct cf_stp_server* server){
             {
                 struct cf_stp_context* context = (struct cf_stp_context*)cf_allocator_simple_alloc(sizeof(struct cf_stp_context));
                 context->m_socket = cli_sock;
+                context->m_fd = NULL;
+                context->m_file_len = 0;
+                context->m_file_offset = 0;
                 cf_list_push(cli_list,(void*)context);
                 //COMM_LOG("accept client %s:%hu\n",inet_ntoa(cli_addr.sin_addr),cli_addr.sin_port);
                 if(cli_sock > max_fd)
@@ -496,11 +500,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     int seq = cf_json_get_int(json,"seq",NULL);
                     char* topic = cf_json_get_string(json,"topic",NULL);
                     struct cf_json* (*proccessor)(struct cf_stp_context*,struct cf_json* ) = (struct cf_json* (*)(struct cf_stp_context*,struct cf_json* ))cf_hash_get(server->m_processors,topic,NULL); 
-                    if(proccessor == NULL)
-                    {
-                        cf_json_destroy_object(json);
-                        continue;
-                    }
+
                     struct cf_json*  reply = NULL;
                     if(proccessor){
                         reply = proccessor(context,cf_json_get_item(json,"msg"));
@@ -564,6 +564,18 @@ int cf_stp_server_run(struct cf_stp_server* server){
 #include <unistd.h>
 #include "cf_threadpool/cf_threadpool.h"
 #include "cf_std.h"
+static struct cf_json* stp_server_query_opt(struct cf_stp_context* c,struct cf_json* j)
+{
+    cf_unused(c);
+    cf_unused(j);
+    struct cf_json* json = cf_json_create_object();
+    cf_json_add_string_to_object(json,"mcu-ver", "app197004201920");
+    cf_json_add_string_to_object(json,"fpga-ver","app197005210918");
+    cf_json_add_string_to_object(json,"dev","pc");
+    cf_json_add_int_to_object(json,"slot-id",16);
+    return json;
+}
+
 static struct cf_json* proccessor(struct cf_stp_context* context,struct cf_json*json){
     cf_unused(context);
     printf("%s\n",cf_json_print(json));
@@ -583,6 +595,7 @@ static void stp_server_test(void* d){
     cf_json_add_int_to_object(multicast_msg,"slot-id",16);
     cf_stp_server_set_multicast_msg(server,multicast_msg);
     cf_stp_server_listen(server,"test-topic",proccessor);
+    cf_stp_server_listen(server,"query",stp_server_query_opt);
     cf_stp_server_run(server);
     cf_stp_server_destroy(server);
 }
@@ -661,7 +674,7 @@ static void stp_client_test(void* d){
             cf_json_destroy_object(json);
         }
         cf_json_destroy_object(msg);
-        sleep(1);
+        sleep(10);
     }
 
 }
