@@ -98,11 +98,22 @@ int cf_stp_client_init(struct cf_stp_client* client,const char* multicast_addr ,
             goto err1;
         }
 
-        struct ip_mreq mreq;                                /*加入多播组*/
-        mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);  /*多播地址*/
-        mreq.imr_interface.s_addr = htonl(INADDR_ANY);      /*网络接口为默认*/
-        /*将本机加入多播组*/
-        err = setsockopt(client->m_multicast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
+        if(strcmp(multicast_addr,"255.255.255.255") == 0 ) //广播
+        {
+
+            bool optval=true;
+            setsockopt(client->m_multicast_socket,SOL_SOCKET,SO_BROADCAST,(char*)&optval,sizeof(bool));
+        }
+        else //组播
+        {
+            struct ip_mreq mreq;                                /*加入多播组*/
+            mreq.imr_multiaddr.s_addr = inet_addr(multicast_addr);  /*多播地址*/
+            mreq.imr_interface.s_addr = htonl(INADDR_ANY);      /*网络接口为默认*/
+            /*将本机加入多播组*/
+            err = setsockopt(client->m_multicast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
+        }
+        
+        
         if (err < 0)
         {
             perror("setsockopt():IP_ADD_MEMBERSHIP");
@@ -275,6 +286,23 @@ int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* m
         local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
         local_addr.sin_port = 0;
         bind(server->m_multi_addr,(struct sockaddr*)&local_addr, sizeof(local_addr)) ;
+
+
+        if(server->m_multi_addr == 0xffffffff ) //广播
+        {
+
+            bool optval=true;
+            setsockopt(server->m_multicast_socket,SOL_SOCKET,SO_BROADCAST,(char*)&optval,sizeof(bool));
+        }
+        else //组播
+        {
+            struct ip_mreq mreq;                                /*加入多播组*/
+            mreq.imr_multiaddr.s_addr = server->m_multi_addr;  /*多播地址*/
+            mreq.imr_interface.s_addr = htonl(INADDR_ANY);      /*网络接口为默认*/
+            /*将本机加入多播组*/
+            setsockopt(server->m_multicast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
+        }
+        
     }
     server->m_server_socket = socket(AF_INET, SOCK_STREAM, 0);         /*建立套接字*/
     if (server->m_server_socket == -1)
@@ -555,7 +583,7 @@ static void stp_server_test(void* d){
 }
 static void stp_client_multi_test(void* d){
     cf_unused(d);
-    struct cf_stp_client* client = cf_stp_client_create("224.0.10.200",8888);
+    struct cf_stp_client* client = cf_stp_client_create("255.255.255.255",8888);
     while(true){
         struct cf_json* json = cf_stp_client_recv_multicast(client);
         if(json)
@@ -645,7 +673,7 @@ int main(int argc,const char* argv[]){
     //cf_threadpool_run(stp_client_test,( void*)d);
     while(true){
         sleep(1);
-        //printf("alloc_size=%ld\n",cf_allocator_alloc_size());
+        printf("alloc_size=%ld\n",cf_allocator_alloc_size());
     }
     return 0;
 }
