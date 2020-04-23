@@ -20,7 +20,9 @@ namespace IPC_MVR_Manager.STPClient
 		{
 			mMulticastSocket = new UdpClient();
 			IPAddress ipaddr = IPAddress.Parse(multicastAddr);
+
 			mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+
 			if (ipaddr.Equals(IPAddress.Broadcast))
 			{
 				mMulticastSocket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
@@ -45,17 +47,19 @@ namespace IPC_MVR_Manager.STPClient
 			}
 			
 		}
-		public void Connect(string ipaddr,UInt16 port) {
+		public bool Connect(string ipaddr,UInt16 port) {
 			//EndPoint serverAddr = new IPEndPoint(IPAddress.Parse(ipaddr), port);
 			try
 			{
 				mClientSocket = new TcpClient();
-				mClientSocket.Connect(ipaddr, port);
+				IAsyncResult ar = mClientSocket.BeginConnect(ipaddr,port,null,null);
+				return ar.AsyncWaitHandle.WaitOne(1000);
 			}
 
 			catch (Exception e)
 			{
 				Console.WriteLine("Error:"+e.ToString());
+				return false;
 			}
 			
 		}
@@ -74,7 +78,16 @@ namespace IPC_MVR_Manager.STPClient
 			Array.Copy(BitConverter.GetBytes((UInt32)(count + 4)), buff, 4);
 			buff[4] = 1;
 			Array.Copy(data, offset, buff, 8, count);
-			mClientSocket.GetStream().Write(buff, 0, buff.Length);
+			try
+			{
+				mClientSocket.GetStream().Write(buff, 0, buff.Length);
+			}
+			catch {
+				if (onClose != null)
+					onClose();
+				return ;
+			}
+			
 		}
 		public void WriteBinary(byte[] data) {
 			WriteBinary(data, 0, data.Length);
@@ -97,24 +110,53 @@ namespace IPC_MVR_Manager.STPClient
 			buff[4] = 0;
 			Array.Copy(bytes, 0,buff,8, bytes.Length);
 			buff[buff.Length-1] = 0;
-
-			mClientSocket.GetStream().Write(buff, 0,buff.Length);
-			buff = new byte[4];
-			if (mClientSocket.GetStream().Read(buff, 0, 4) == 0)
+			try
 			{
+				mClientSocket.GetStream().Write(buff, 0, buff.Length);
+			}
+			catch {
+				if(this.onClose != null)
+					this.onClose();
 				return null;
 			}
+			
+			buff = new byte[4];
+			try
+			{
+				if (mClientSocket.GetStream().Read(buff, 0, 4) == 0)
+				{
+					return null;
+				}
+			}
+			catch
+			{
+				if (this.onClose != null)
+					this.onClose();
+				return null;
+			}
+
 			int pending_size = BitConverter.ToInt32(buff, 0);
 			buff = new byte[pending_size];
 			int offset = 0;
-			while (pending_size > 0) {
-				int count = mClientSocket.GetStream().Read(buff, offset, pending_size);
-				if (count == 0) {
-					return null;
-				} 
-				offset += count;
-				pending_size -= count;
+			try {
+				while (pending_size > 0)
+				{
+					int count = mClientSocket.GetStream().Read(buff, offset, pending_size);
+					if (count == 0)
+					{
+						return null;
+					}
+					offset += count;
+					pending_size -= count;
+				}
 			}
+			catch
+			{
+				if (this.onClose != null)
+					this.onClose();
+				return null;
+			}
+			
 
 			obj = (JObject)JsonConvert.DeserializeObject(System.Text.Encoding.UTF8.GetString(buff,0,buff.Length-1));
 			return obj;
@@ -130,9 +172,15 @@ namespace IPC_MVR_Manager.STPClient
 			//mMulticastSocket.BeginReceiveFrom(buff, 0, buff.Length, SocketFlags.None, ref senderIP, OnDataReceived, map);
 		}
 		public delegate void OnMultiCastMsg(JObject name);
+		public delegate void OnClose();
 		private OnMultiCastMsg onMultiCastMsg = null;
+		private OnClose onClose = null;
 		public void ListenMultiCastMsg(OnMultiCastMsg onMultiCastMsg) {
 			this.onMultiCastMsg = onMultiCastMsg;
+		}
+		public void ListenClose(OnClose onMultiCastMsg)
+		{
+			this.onClose = onMultiCastMsg;
 		}
 		public void OnDataReceived(IAsyncResult ar)
 		{

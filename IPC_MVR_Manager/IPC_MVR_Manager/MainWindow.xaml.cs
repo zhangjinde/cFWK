@@ -16,7 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
+using System.Configuration;
 
 namespace IPC_MVR_Manager
 {
@@ -48,33 +48,108 @@ namespace IPC_MVR_Manager
         }
         public MainWindow()
         {
+            InitializeComponent();
             //client.Connect("192.168.10.74", 8098);
             client.ListenMultiCastMsg(onMulticastMsg);
+            client.ListenClose(onClientClose);
             client.Start();
-            InitializeComponent();
+
+            
+            
             listBox.ItemsSource = clientIP;
+            String str = ConfigurationManager.AppSettings["TmpPath"];
+            if (!System.IO.File.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\app.config"))
+            {
+                return;
+            }
+
+            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            if (cfa.AppSettings.Settings.AllKeys.Contains("mcu-file-bin"))
+            {
+                textMCUFile.Text = cfa.AppSettings.Settings["mcu-file-bin"].Value.ToString();
+            }
+            if (cfa.AppSettings.Settings.AllKeys.Contains("fpga-file-bin"))
+            {
+                textFPGAFile.Text = cfa.AppSettings.Settings["fpga-file-bin"].Value.ToString();
+            }
+            if (cfa.AppSettings.Settings.AllKeys.Contains("input-addr"))
+            {
+                textIP.Text = cfa.AppSettings.Settings["input-addr"].Value.ToString();
+            }
+            
+
+            cfa.Save();
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (listBox.SelectedItem == null)
-                return;
+    
             if (client.IsConnected)
                 client.Close();
-            client.Connect(listBox.SelectedItem.ToString(), clientMap[listBox.SelectedItem.ToString()].Value<UInt16>("port"));
-            if (client.IsConnected)
+
+            if (radioBtnInput.IsChecked == true)
             {
-                label.Foreground = new SolidColorBrush(Colors.Black);
-                label.Content = "连接到:" + listBox.SelectedItem.ToString();
-                mCurrentDev = clientMap[listBox.SelectedItem.ToString()];
+                string[] addr = textIP.Text.Split(':');
+                if (addr.Length < 2)
+                {
+                    MessageBox.Show("输入地址有误，请输入正确的地址如 192.168.10.2:8888");
+                    return;
+                }
+
+                client.Connect(addr[0].ToString(), UInt16.Parse(addr[1]));
+                if (client.IsConnected)
+                {
+                    JObject obj = client.Request("query", null);
+                    obj["msg"] = obj.Value<JObject>("reply");
+                    clientMap[addr[0].ToString()] = obj;
+                    mCurrentDev = obj.Value<JObject>("reply");
+                    updateInfo();
+                    label.Foreground = new SolidColorBrush(Colors.Black);
+                    label.Content = "连接到:" + addr[0].ToString();
+                }
+                else
+                {
+                    label.Foreground = new SolidColorBrush(Colors.Red);
+                    label.Content = "未连接";
+                    MessageBox.Show("无法连接，请输入正确的地址如 192.168.10.2:8888");
+                    return;
+                }
+                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                cfa.AppSettings.Settings["input-addr"].Value = textIP.Text;
+                cfa.Save();
+                return;
             }
             else {
-                label.Foreground = new SolidColorBrush(Colors.Red);
-                label.Content = "未连接";
+                if (listBox.SelectedItem == null)
+                {
+                    MessageBox.Show("请从列表选择合适的地址");
+                    return;
+                }
+                client.Connect(listBox.SelectedItem.ToString(), clientMap[listBox.SelectedItem.ToString()].Value<UInt16>("port"));
+                if (client.IsConnected)
+                {
+                    label.Foreground = new SolidColorBrush(Colors.Black);
+                    label.Content = "连接到:" + listBox.SelectedItem.ToString();
+                    mCurrentDev = clientMap[listBox.SelectedItem.ToString()];
+                }
+                else
+                {
+                    label.Foreground = new SolidColorBrush(Colors.Red);
+                    label.Content = "未连接";
+                    
+                    MessageBox.Show("设备无法连接");
+                    return;
+                }
             }
             
+            
         }
-
+        private void onClientClose() {
+            label.Foreground = new SolidColorBrush(Colors.Red);
+            label.Content = "未连接";
+        }
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.OpenFileDialog openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
@@ -85,7 +160,10 @@ namespace IPC_MVR_Manager
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textMCUFile.Text = openFileDialog1.FileName;
-                //此处做你想做的事 ...=openFileDialog1.FileName; 
+
+                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                cfa.AppSettings.Settings["mcu-file-bin"].Value = textMCUFile.Text;
+                cfa.Save();
             }
 
         }
@@ -99,7 +177,10 @@ namespace IPC_MVR_Manager
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 textFPGAFile.Text = openFileDialog1.FileName;
-                //此处做你想做的事 ...=openFileDialog1.FileName; 
+
+                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                cfa.AppSettings.Settings["fpga-file-bin"].Value = textFPGAFile.Text;
+                cfa.Save();
             }
 
         }
@@ -111,7 +192,7 @@ namespace IPC_MVR_Manager
             System.IO.FileInfo fileInfo = new System.IO.FileInfo(file_path);
             int size = (int)fileInfo.Length;
             JObject msg = new JObject();
-            msg["file-name"] = "/usr/Hseries/config/upgrade.tar";
+            msg["file-name"] = "/usr/Hseries/configs/upgrade.tar";
             msg["file-len"] = size;
             JObject ack = client.Request("file-upload", msg);
             if (ack != null && ack["reply"]["ack"].ToString() == "ok")
@@ -125,6 +206,7 @@ namespace IPC_MVR_Manager
                     client.WriteBinary(buff, 0, count);
                     size -= count;
                 }
+                f.Close();
             }
         }
 
@@ -135,9 +217,9 @@ namespace IPC_MVR_Manager
             int size = (int)fileInfo.Length;
             JObject msg = new JObject();
             if(mCurrentDev.Value<string>("dev") == "mvr")
-                msg["file-name"] = "/usr/Hseries/config/mvr_fpga.bin";
+                msg["file-name"] = "/usr/Hseries/configs/mvr_fpga.bin";
             else
-                msg["file-name"] = "/usr/Hseries/config/ipc_fpga.bin";
+                msg["file-name"] = "/usr/Hseries/configs/ipc_fpga.bin";
             msg["file-len"] = size;
             JObject ack = client.Request("file-upload", msg);
             if (ack != null && ack["reply"]["ack"].ToString() == "ok")
@@ -151,18 +233,33 @@ namespace IPC_MVR_Manager
                     client.WriteBinary(buff, 0, count);
                     size -= count;
                 }
+                f.Close();
             }
         }
-
+        void updateInfo() {
+            if (mCurrentDev == null)
+            {
+                textDev.Text = "";
+                textMCU.Text = "";
+                textFPGA.Text = "";
+                textSlotId.Text = "";
+            }
+            else {
+                textDev.Text = mCurrentDev.Value<String>("dev");
+                textMCU.Text = mCurrentDev.Value<String>("mcu-ver");
+                textFPGA.Text = mCurrentDev.Value<String>("fpga-ver");
+                textSlotId.Text = mCurrentDev.Value<String>("slot-id");
+            }
+            
+        }
         private void listBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string dev_ip = listBox.SelectedItem.ToString();
-            JObject obj = clientMap[dev_ip].Value<JObject>("msg");
-            textDev.Text = obj.Value<String>("dev");
-            textMCU.Text = obj.Value<String>("mcu-ver");
-            textFPGA.Text = obj.Value<String>("fpga-ver");
-            textSlotId.Text = obj.Value<String>("slot-id");
-
+            if (listBox.SelectedItem != null) {
+                string dev_ip = listBox.SelectedItem.ToString();
+                mCurrentDev = clientMap[dev_ip].Value<JObject>("msg");
+                updateInfo();
+            }
+            
         }
 
         private void Button_Click_Reboot(object sender, RoutedEventArgs e)
@@ -171,6 +268,12 @@ namespace IPC_MVR_Manager
             {
                 client.Request("reboot", null);
             }
+        }
+
+        private void btnClickClearDevList(object sender, RoutedEventArgs e)
+        {
+            clientMap.Clear();
+            clientIP.Clear();
         }
     }
 }
