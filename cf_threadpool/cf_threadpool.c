@@ -42,6 +42,7 @@ static struct _thread_item* _create_thread_item(){
         item->m_isbusy = false;
         item->m_queue = cf_async_queue_create(NULL);
         pthread_create(&item->m_thread,0,_thread_item_run,item);
+        pthread_detach(item->m_thread);
         pthread_mutex_init(&item->m_mutex,NULL);
     }
     return item;

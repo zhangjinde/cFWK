@@ -43,7 +43,17 @@ void cf_logger_dbg(struct cf_logger* logger,const char*file,const char* func,int
     printf("%s",output);
     return;
 }
+void cf_logger_error(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...)
+{
+    char output[LOG_STR_MAX_SIZE];
+    va_list args;
+    va_start(args,format);
+    to_log_str(file,func,line,format,output,sizeof(output),args);
+    va_end(args);
 
+    printf("%s",output);
+    return;
+}
 struct cf_logger* cf_logger_get_root()
 {
     return NULL;
@@ -56,6 +66,7 @@ struct cf_logger* cf_logger_get_root()
 int main(){
     cf_logger_root_info("INFO THIS IS A TEST %s","hello");
     cf_logger_root_dgb("DEBUG THIS IS A TEST %s","hello");
+    cf_logger_root_error("ERROR THIS IS A TEST %s","hello");
     return 0;
 }
 #endif
