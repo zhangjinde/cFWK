@@ -7,8 +7,8 @@
         mc:Ignorable="d"
         Title="IPC_MVR_Control" Height="450" Width="800">
     <Grid>
-        <ListBox x:Name="listBox" HorizontalAlignment="Left" Height="336" Margin="40,27,0,0" VerticalAlignment="Top" Width="141" SelectionChanged="listBox_SelectionChanged"/>
-        <Button Content="连接" HorizontalAlignment="Left" Margin="62,382,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+        <ListBox x:Name="listBox" HorizontalAlignment="Left" Height="262" Margin="25,12,0,0" VerticalAlignment="Top" Width="141" SelectionChanged="listBox_SelectionChanged"/>
+        <Button Content="连接" HorizontalAlignment="Left" Margin="215,379,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
         <TabControl HorizontalAlignment="Left" Height="351" Margin="215,12,0,0" VerticalAlignment="Top" Width="567">
             <TabItem Header="设备信息">
                 <Grid Background="#FFE5E5E5">
@@ -36,10 +36,17 @@
                     <Button Content="浏览" HorizontalAlignment="Left" Margin="228,89,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_2" Grid.Column="1"/>
                     <Button Content="更新" HorizontalAlignment="Left" Margin="326,37,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_3" Grid.Column="1"/>
                     <Button Content="更新" HorizontalAlignment="Left" Margin="326,89,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_4" Grid.Column="1"/>
+                    <Button Content="重启" HorizontalAlignment="Left" Margin="228,142,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_Reboot" Grid.Column="1"/>
                 </Grid>
             </TabItem>
         </TabControl>
-        <Label x:Name="label" Content="未连接" HorizontalAlignment="Left" Margin="215,379,0,0" VerticalAlignment="Top" Width="175" Foreground="#FF0000"/>
+        <Label x:Name="label" Content="未连接" HorizontalAlignment="Left" Margin="607,379,0,0" VerticalAlignment="Top" Width="175" Foreground="#FF0000"/>
+        <TextBox x:Name="textIP" HorizontalAlignment="Left" Height="23" Margin="25,375,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="156" Text="192.168.10.34:9851"/>
+        <Grid HorizontalAlignment="Left" Height="59" Margin="25,309,0,0" VerticalAlignment="Top" Width="133" Background="WhiteSmoke">
+            <RadioButton x:Name="radioBtnList"  Content="列表" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,10,0,0" Width="64" IsChecked="True"/>
+            <RadioButton x:Name="radioBtnInput"  Content="输入" HorizontalAlignment="Left" Margin="4,35,0,0" VerticalAlignment="Top" Width="64"/>
+        </Grid>
+        <Button Content="清空" HorizontalAlignment="Left" Margin="25,285,0,0" VerticalAlignment="Top" Width="75" Click="btnClickClearDevList"/>
 
     </Grid>
 </Window>
