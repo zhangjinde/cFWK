@@ -21,7 +21,7 @@ static void* _thread_item_run(void* arg){
         void (*func)(void*) = (void (*)(void*))cf_async_queue_pop(_this->m_queue);
         func(_this->m_data);
         _this->m_data = NULL;
-        pthread_mutex_lock(&_this->m_mutex);
+        pthread_mutex_unlock(&_this->m_mutex);
     }
     return NULL;
 }
