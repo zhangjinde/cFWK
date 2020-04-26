@@ -1,6 +1,10 @@
 #ifndef CF_THREADPOOL_H
 #define CF_THREADPOOL_H
 
+#ifndef CF_THREADPOOL_GLOBAL_COUNT
+#define CF_THREADPOOL_GLOBAL_COUNT  10
+#endif
+
 #ifdef __cplusplus
 extern "C"{
 #endif
