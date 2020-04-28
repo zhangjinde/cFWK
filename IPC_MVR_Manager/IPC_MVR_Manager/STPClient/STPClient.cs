@@ -16,7 +16,7 @@ namespace IPC_MVR_Manager.STPClient
 		int mSeq = 0;
 		UdpClient mMulticastSocket = null;
 		TcpClient mClientSocket = null;
-		public STPClient(String multicastAddr, UInt16 multicastPort)
+		public STPClient(String multicastAddr, UInt16 multicastPort, String localAddr)
 		{
 			mMulticastSocket = new UdpClient();
 			IPAddress ipaddr = IPAddress.Parse(multicastAddr);
@@ -30,7 +30,7 @@ namespace IPC_MVR_Manager.STPClient
 			else
 			{
 				
-				mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Any);
+				mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Parse(localAddr));
 				//mMulticastSocket.JoinMulticastGroup(IPAddress.Parse(multicastAddr), IPAddress.Parse("192.168.10.74"));
 			}
 			//
@@ -66,11 +66,14 @@ namespace IPC_MVR_Manager.STPClient
 		public void Close()
 		{
 			//EndPoint serverAddr = new IPEndPoint(IPAddress.Parse(ipaddr), port);
-			if (!IsConnected)
-				return;
+			//if (!IsConnected)
+			//	return;
 			if(mClientSocket != null)
 				mClientSocket.Close();
+			if (mMulticastSocket != null)
+				mMulticastSocket.Close();
 			mClientSocket = null;
+			mMulticastSocket = null;
 
 		}
 		public void WriteBinary(byte[] data, int offset, int count) {
@@ -94,8 +97,10 @@ namespace IPC_MVR_Manager.STPClient
 		}
 		public JObject Request(string topic,JObject msg)
 		{
-			if (!mClientSocket.Connected)
+			if (mClientSocket == null || !mClientSocket.Connected) {
 				return null;
+			}
+			
 			
 			JObject obj = new JObject();
 			obj["topic"] = topic;
@@ -187,15 +192,22 @@ namespace IPC_MVR_Manager.STPClient
 			Dictionary<String, Object> map = ar.AsyncState as Dictionary<String, Object>;
 			IPEndPoint senderIP = new IPEndPoint(IPAddress.Any, 0);
 			// = map["recv-buffer"] as byte[];
-			byte[] buff = mMulticastSocket.EndReceive(ar, ref senderIP);
-			//System.Text.Encoding.UTF8.GetString(buff);
-			//server-ip
-			JObject obj = (JObject)JsonConvert.DeserializeObject(System.Text.Encoding.UTF8.GetString(buff, 0, buff.Length-1));
-			obj["server-ip"] = senderIP.Address.ToString();
-			if (onMultiCastMsg != null) {
-				onMultiCastMsg(obj);
+			try
+			{
+				byte[] buff = mMulticastSocket.EndReceive(ar, ref senderIP);
+				//System.Text.Encoding.UTF8.GetString(buff);
+				//server-ip
+				JObject obj = (JObject)JsonConvert.DeserializeObject(System.Text.Encoding.UTF8.GetString(buff, 0, buff.Length - 1));
+				obj["server-ip"] = senderIP.Address.ToString();
+				if (onMultiCastMsg != null)
+				{
+					onMultiCastMsg(obj);
+				}
+				mMulticastSocket.BeginReceive(OnDataReceived, map);
 			}
-			mMulticastSocket.BeginReceive( OnDataReceived, map);
+			catch { 
+			}
+			
 		}
 	};
 }

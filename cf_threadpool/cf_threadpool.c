@@ -11,7 +11,6 @@ struct _thread_item
     bool m_isbusy;
     void* m_data;
     struct cf_async_queue* m_queue;
-    //CXASyncQueue<void (*)(void*)> m_queue;
 };
 
 static void* _thread_item_run(void* arg){
@@ -87,7 +86,7 @@ int cf_threadpool_start(struct cf_threadpool* threadpool,void (*run)(void*),void
 static struct cf_threadpool* cf_threadpool_global_instance(){
     static struct cf_threadpool* instance = NULL;
     if(instance == NULL){
-        instance = cf_threadpool_create(40);
+        instance = cf_threadpool_create(CF_THREADPOOL_GLOBAL_COUNT);
     }
     return instance;
 }
@@ -96,7 +95,7 @@ int cf_threadpool_run(void (*run)(void*),void* d){
     return cf_threadpool_start(threadpool,run,d);
 }
 /*************************************
- * gcc -DCF_THREADPOOL_TEST -g -I../ cf_threadpool.c ../cf_allocator/cf_allocator_simple.c ../cf_async_queue/cf_async_queue.c ../cf_collection/cf_list.c ../cf_collection/cf_iterator.c -lpthread -o cf_threadpool_test
+ * gcc -DCF_THREADPOOL_TEST -DCF_THREADPOOL_GLOBAL_COUNT=3 -g -I../ cf_threadpool.c ../cf_allocator/cf_allocator_simple.c ../cf_async_queue/cf_async_queue.c ../cf_collection/cf_list.c ../cf_collection/cf_iterator.c -lpthread -o cf_threadpool_test
  * ***********************************/
 #ifdef CF_THREADPOOL_TEST
 #include <unistd.h>

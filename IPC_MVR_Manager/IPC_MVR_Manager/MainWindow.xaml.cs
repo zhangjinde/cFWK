@@ -25,10 +25,10 @@ namespace IPC_MVR_Manager
     /// </summary>
     public partial class MainWindow : Window
     {
-        static STPClient.STPClient client = new STPClient.STPClient("224.0.10.200", 8888);
+        STPClient.STPClient client = null;
         //static STPClient.STPClient client = new STPClient.STPClient("255.255.255.255", 8888);
         ObservableCollection<string> clientIP = new ObservableCollection<string>();
-        static Dictionary<string, JObject> clientMap = new Dictionary<string, JObject>();
+        Dictionary<string, JObject> clientMap = new Dictionary<string, JObject>();
         List<string> test = new List<string>();
         JObject mCurrentDev = null;
         void onMulticastMsg(JObject obj)
@@ -49,10 +49,18 @@ namespace IPC_MVR_Manager
         public MainWindow()
         {
             InitializeComponent();
+            string resultIP = string.Empty;
+            System.Net.IPAddress[] ips = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName()).AddressList;
+            comboBoxHost.Items.Add("0.0.0.0");
+            foreach (System.Net.IPAddress ip in ips)
+            {
+                if (!ip.IsIPv6LinkLocal)
+                    comboBoxHost.Items.Add(ip.ToString());
+            }
+            comboBoxHost.SelectedIndex = 0;
+
             //client.Connect("192.168.10.74", 8098);
-            client.ListenMultiCastMsg(onMulticastMsg);
-            client.ListenClose(onClientClose);
-            client.Start();
+
 
             
             
@@ -85,7 +93,8 @@ namespace IPC_MVR_Manager
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-    
+            
+
             if (client.IsConnected)
                 client.Close();
 
@@ -112,8 +121,10 @@ namespace IPC_MVR_Manager
                 {
                     JObject obj = client.Request("query", null);
                     obj["msg"] = obj.Value<JObject>("reply");
+                    clientIP.Add(addr[0].ToString());
                     clientMap[addr[0].ToString()] = obj;
                     mCurrentDev = obj.Value<JObject>("reply");
+
                     updateInfo();
                     label.Foreground = new SolidColorBrush(Colors.Black);
                     label.Content = "连接到:" + addr[0].ToString();
@@ -125,9 +136,17 @@ namespace IPC_MVR_Manager
                     MessageBox.Show("无法连接，请输入正确的地址如 192.168.10.2:8888");
                     return;
                 }
-                Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                cfa.AppSettings.Settings["input-addr"].Value = textIP.Text;
-                cfa.Save();
+                try
+                {
+                    Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    cfa.AppSettings.Settings["input-addr"].Value = textIP.Text;
+                    cfa.Save();
+                }
+                catch (Exception ex){
+                    
+                    MessageBox.Show(ex.ToString());
+                }
+                
                 return;
             }
             else {
@@ -198,7 +217,17 @@ namespace IPC_MVR_Manager
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
             string file_path = textMCUFile.Text;
-            System.IO.FileInfo fileInfo = new System.IO.FileInfo(file_path);
+            System.IO.FileInfo fileInfo = null;
+            try
+            {
+                fileInfo = new System.IO.FileInfo(file_path);
+            }
+            catch (Exception ex) {
+                MessageBox.Show(ex.ToString());
+                return;
+            }
+
+            
             int size = (int)fileInfo.Length;
             JObject msg = new JObject();
             msg["file-name"] = "/usr/Hseries/configs/upgrade.tar";
@@ -283,6 +312,19 @@ namespace IPC_MVR_Manager
         {
             clientMap.Clear();
             clientIP.Clear();
+        }
+
+        private void comboBoxHost_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (comboBoxHost.SelectedItem == null)
+                return;
+            if(client != null)
+                client.Close();
+            
+            client = new STPClient.STPClient("224.0.10.200", 8888, comboBoxHost.SelectedItem.ToString());
+            client.ListenMultiCastMsg(onMulticastMsg);
+            client.ListenClose(onClientClose);
+            client.Start();
         }
     }
 }
