@@ -270,8 +270,8 @@ int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* m
     server->m_multi_addr = 0;
     server->m_multi_port = multicast_port;
     server->m_server_port = port;
-    server->m_multicast_msg = cf_json_create_object();
-    cf_json_add_string_to_object(server->m_multicast_msg,"multicast-msg","this is a test");
+    server->m_multicast_msg = NULL;
+    
 
     struct sockaddr_in local_addr;
     if( multicast_addr){
@@ -304,6 +304,8 @@ int cf_stp_server_init(struct cf_stp_server* server,uint16_t port ,const char* m
             /*将本机加入多播组*/
             setsockopt(server->m_multicast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq, sizeof(mreq));
         }
+        server->m_multicast_msg = cf_json_create_object();
+        cf_json_add_string_to_object(server->m_multicast_msg,"multicast-msg","this is a test");
         
     }
     server->m_server_socket = socket(AF_INET, SOCK_STREAM, 0);         /*建立套接字*/
@@ -340,6 +342,11 @@ err2:
     {
         close(server->m_multicast_socket);
         server->m_multicast_socket = -1;
+        if(server->m_multicast_msg)
+        {
+            cf_json_destroy_object(server->m_multicast_msg);
+            server->m_multicast_msg = NULL;
+        }
     }
 err1:
     return -1;
