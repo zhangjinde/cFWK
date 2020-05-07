@@ -2,62 +2,53 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include "cf_collection/cf_list.h"
+#include "cf_allocator/cf_allocator_simple.h"
 
-#define LOG_STR_MAX_SIZE    4096
+#define LOG_LINE_SZ    1024
 
 struct cf_logger{
+    cf_log_level m_level;
+    cf_list* m_out_list;    //cf_iostream* list
 };
+static cf_logger* get_root_logger(){
+    static cf_logger* logger = NULL;
+    if(logger == NULL){
+        logger = (cf_logger*)cf_allocator_simple_alloc(sizeof(cf_logger));
+        logger->m_level = CF_LOG_INFO;
+        logger->m_out_list = cf_list_create(cf_iostream_destroy);
+        if(logger->m_out_list == NULL){
+            cf_allocator_simple_free(logger);
+            logger = NULL;
+        }
+    }
+    return logger;
+}
 
-static void to_log_str(const char*file,const char* func,int line,const char* format,char* output_str,int output_str_size,va_list args)
-{
-    char content[1024];
+void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
+    if(level > logger->m_level)
+        return;
+    va_list args;
+    va_start(args,format);
+    char line[LOG_LINE_SZ];
+    vsnprintf(line,sizeof(line),format, args);
+    va_end(args);
+    
     time_t now;
     struct tm *tm_now;
     time(&now);
     tm_now = localtime(&now);
-    vsnprintf(content,sizeof(content),format, args);
-    snprintf(output_str,output_str_size,"%d-%02d-%02d %02d:%02d:%02d %s:%s(%d): %s \n", tm_now->tm_year+1900, tm_now->tm_mon+1, tm_now->tm_mday,
-              tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec,
-              file,func,line,content);
-    return;
+    char time_str[64];
+    snprintf(time_str,sizeof(time_str),"%02d-%02d-%02d %02d:%02d:%02d\n", (tm_now->tm_year+1900-2000), tm_now->tm_mon+1, tm_now->tm_mday,
+              tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
+    char line2[LOG_LINE_SZ];
+    snprintf(line2,sizeof(line2),"%s--%s\n", time_str,line);
+    for(cf_iterator iter = cf_list_begin(logger->m_out_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
+        cf_iostream_writeln((cf_iostream*)cf_iterator_get(&iter) ,line2);
+    }
 }
-void cf_logger_info(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...)
-{
-    char output[LOG_STR_MAX_SIZE];
-    va_list args;
-    va_start(args,format);
-    to_log_str(file,func,line,format,output,sizeof(output),args);
-    va_end(args);
 
-    printf("%s",output);
-    return;
-}
-void cf_logger_dbg(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...)
-{
-    char output[LOG_STR_MAX_SIZE];
-    va_list args;
-    va_start(args,format);
-    to_log_str(file,func,line,format,output,sizeof(output),args);
-    va_end(args);
 
-    printf("%s",output);
-    return;
-}
-void cf_logger_error(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...)
-{
-    char output[LOG_STR_MAX_SIZE];
-    va_list args;
-    va_start(args,format);
-    to_log_str(file,func,line,format,output,sizeof(output),args);
-    va_end(args);
-
-    printf("%s",output);
-    return;
-}
-struct cf_logger* cf_logger_get_root()
-{
-    return NULL;
-}
 
 #ifdef TEST_CF_LOGGER
 /*************************************

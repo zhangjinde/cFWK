@@ -8,15 +8,15 @@
 #ifdef __cplusplus
 extern "C"{
 #endif
-struct cf_list;
-struct cf_list* cf_list_create(void (*free_data)(void*));
-void cf_list_delete(struct cf_list* list);
-bool cf_list_is_empty(const struct cf_list*);
-void cf_list_push(struct cf_list*,void*);
-void* cf_list_take_front(struct cf_list*);
-size_t cf_list_length(const struct cf_list*);
+typedef struct cf_list cf_list;
+cf_list* cf_list_create(void (*free_data)(void*));
+void cf_list_delete(cf_list* list);
+bool cf_list_is_empty(const cf_list*);
+void cf_list_push(cf_list*,void*);
+void* cf_list_take_front(cf_list*);
+size_t cf_list_length(const cf_list*);
 
-struct cf_iterator cf_list_begin(struct cf_list* list);
+cf_iterator cf_list_begin(cf_list* list);
 
 #ifdef __cplusplus
 }

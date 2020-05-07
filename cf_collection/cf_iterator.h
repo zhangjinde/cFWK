@@ -6,7 +6,7 @@
 extern "C"{
 #endif
 
-struct cf_iterator;
+typedef struct cf_iterator cf_iterator;
 struct cf_iterator_vt
 {
     bool(*is_end)(struct cf_iterator*);
