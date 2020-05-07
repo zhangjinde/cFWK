@@ -3,12 +3,16 @@
 #include "cf_collection/cf_list.h"
 #include <pthread.h>
 
-struct cf_async_queue{
+typedef struct cf_async_queue{
     pthread_mutex_t m_mutex;
     pthread_cond_t  m_condition;
     struct cf_list* m_queue;
+    int m_max_size;
 
-};
+}cf_async_queue;
+void cf_async_queue_set_max_size( cf_async_queue* queue,int max_size){
+    queue->m_max_size = max_size;
+}
 struct cf_async_queue* cf_async_queue_create(void (*free_data)(void*)){
     struct cf_async_queue* queue = (struct cf_async_queue*)cf_allocator_simple_alloc(sizeof(struct cf_async_queue));
     if(queue)
@@ -31,16 +35,26 @@ struct cf_async_queue* cf_async_queue_create(void (*free_data)(void*)){
 void* cf_async_queue_pop(struct cf_async_queue* queue)
 {
     pthread_mutex_lock(&queue->m_mutex);
-    if(cf_list_is_empty(queue->m_queue) == true){
+    while(cf_list_is_empty(queue->m_queue) == true){
             pthread_cond_wait(&queue->m_condition,&queue->m_mutex);
     }
     void* item = cf_list_take_front(queue->m_queue);
+    if(cf_list_length(queue->m_queue) == queue->m_max_size - 1)
+    {
+        pthread_cond_signal(&queue->m_condition);
+    }
     pthread_mutex_unlock(&queue->m_mutex);
     return item;
 }
 
 void cf_async_queue_push(struct cf_async_queue* queue,void* item){
     pthread_mutex_lock(&queue->m_mutex);
+    int max_size = queue->m_max_size;
+    if(max_size > 0  ){
+        while(cf_list_length(queue->m_queue) >= max_size){
+            pthread_cond_wait(&queue->m_condition,&queue->m_mutex);
+        }
+    }
     cf_list_push(queue->m_queue,item);
     if(cf_list_length(queue->m_queue) == 1)
     {
@@ -54,3 +68,4 @@ void cf_async_queue_delete(struct cf_async_queue* queue){
     cf_list_delete(queue->m_queue);
     cf_allocator_simple_free(queue);
 }
+
