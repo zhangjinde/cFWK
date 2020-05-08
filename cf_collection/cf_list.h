@@ -9,7 +9,8 @@
 extern "C"{
 #endif
 typedef struct cf_list cf_list;
-cf_list* cf_list_create(void (*free_data)(void*));
+typedef void(*cf_list_free_f)(void*);
+cf_list* cf_list_create(cf_list_free_f );
 void cf_list_delete(cf_list* list);
 bool cf_list_is_empty(const cf_list*);
 void cf_list_push(cf_list*,void*);

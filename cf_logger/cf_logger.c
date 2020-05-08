@@ -7,25 +7,44 @@
 
 #define LOG_LINE_SZ    1024
 
-struct cf_logger{
+typedef struct cf_logger{
     cf_log_level m_level;
     cf_list* m_out_list;    //cf_iostream* list
-};
+}cf_logger;
+
 static cf_logger* get_root_logger(){
     static cf_logger* logger = NULL;
     if(logger == NULL){
         logger = (cf_logger*)cf_allocator_simple_alloc(sizeof(cf_logger));
         logger->m_level = CF_LOG_INFO;
-        logger->m_out_list = cf_list_create(cf_iostream_destroy);
+        logger->m_out_list = cf_list_create((cf_list_free_f)cf_iostream_destroy);
         if(logger->m_out_list == NULL){
             cf_allocator_simple_free(logger);
             logger = NULL;
         }
+        cf_log_add_out( logger,cf_iostream_from_std_out());
     }
     return logger;
 }
 
+void cf_log_add_out(struct cf_logger* logger,cf_iostream* out){
+    logger = logger == NULL ? get_root_logger(): logger;
+    cf_list_push(logger->m_out_list,out);
+}
+
+void cf_log_remove_out( cf_logger* logger,cf_iostream* out){
+    logger = logger == NULL ? get_root_logger(): logger;
+    for(cf_iterator iter = cf_list_begin(logger->m_out_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
+    {
+        if(cf_iterator_get(&iter) == out){
+            cf_iterator_remove(&iter);
+            break;
+        }
+    }
+}
+
 void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
+    logger = logger == NULL ? get_root_logger(): logger;
     if(level > logger->m_level)
         return;
     va_list args;
@@ -39,7 +58,7 @@ void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
     time(&now);
     tm_now = localtime(&now);
     char time_str[64];
-    snprintf(time_str,sizeof(time_str),"%02d-%02d-%02d %02d:%02d:%02d\n", (tm_now->tm_year+1900-2000), tm_now->tm_mon+1, tm_now->tm_mday,
+    snprintf(time_str,sizeof(time_str),"%02d-%02d-%02d %02d:%02d:%02d", (tm_now->tm_year+1900-2000), tm_now->tm_mon+1, tm_now->tm_mday,
               tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
     char line2[LOG_LINE_SZ];
     snprintf(line2,sizeof(line2),"%s--%s\n", time_str,line);

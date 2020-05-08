@@ -118,10 +118,10 @@ static void _remove(struct cf_iterator* iter)
     if(node->next)
         node->next->pre =node->pre;
     if(list->m_free_data)
-        list->m_free_data(node);
+        list->m_free_data(node->data);
 
     if(list->m_tail == node)
-        list->m_tail = iter->m_priv;
+        list->m_tail = (struct _node*)iter->m_priv;
     list->m_length--;
     if(list->m_length == 0)
         list->m_tail = list->m_head;

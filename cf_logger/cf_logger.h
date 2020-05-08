@@ -13,7 +13,10 @@ typedef enum cf_log_level{
 }cf_log_level;
 typedef struct cf_logger cf_logger;
 //extern struct cf_logger* cf_logger_root();
-void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...);
+//logger == NULL 则操作全局logger对象
+void cf_log( cf_logger* logger,cf_log_level level,const char* format,...);
+void cf_log_add_out( cf_logger* logger,cf_iostream* out);
+void cf_log_remove_out( cf_logger* logger,cf_iostream* out);
 //void cf_log(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...);
 //void cf_logger_dbg(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...);
 //void cf_logger_error(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...);
