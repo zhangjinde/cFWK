@@ -14,6 +14,7 @@
 #include "cf_iostream/cf_iostream_tcp.h" 
 #include "cf_logger/cf_logger.h"
 #include "cf_stp/cf_stp.h"
+#include "cf_collection/cf_string.h"
 #include "assert.h"
 
 #include <sys/types.h>
@@ -35,11 +36,38 @@ static struct cf_json* stp_server_query_opt(struct cf_stp_context* c,struct cf_j
 
 static struct cf_json* proccessor(struct cf_stp_context* context,struct cf_json*json){
     cf_unused(context);
-    printf("%s\n",cf_json_print(json));
+    cf_log(NULL,CF_LOG_DEBUG,"%s\n",cf_json_print(json));
     struct cf_json* reply = cf_json_create_object();
-    cf_json_add_string_to_object(reply,"ack","this ok");
+    cf_json_add_string_to_object(reply,"ack","ok");
     return reply;
 }
+struct tcp_log_data{
+    uint16_t port;
+    cf_string* addr;
+};
+static void create_tcp_log(void* d){
+    struct tcp_log_data* data = (struct tcp_log_data*)d;
+    cf_iostream* out = cf_iostream_tcp_connect(cf_string_c_str(data->addr) ,data->port);
+    if(out){
+        cf_log_add_out(NULL,out);
+    }
+    cf_string_destroy(data->addr);
+    cf_allocator_simple_free(d);
+}
+static struct cf_json* stp_server_tcp_log_opt(struct cf_stp_context* c,struct cf_json* j){
+    cf_unused(c);
+    if(strcmp(cf_json_get_string(j,"opt",NULL),"open") == 0){
+        struct tcp_log_data* d = (struct tcp_log_data*)cf_allocator_simple_alloc(sizeof(struct tcp_log_data));
+        d->addr = cf_string_create_frome_c_str(cf_stp_context_get_client_ip(c));
+        d->port = cf_json_get_int(j,"port",NULL);
+        cf_threadpool_run(create_tcp_log,d);
+    }
+    struct cf_json* reply = cf_json_create_object();
+    cf_json_add_string_to_object(reply,"ack","ok");
+    return reply;
+}
+
+
 static void stp_server_test(void* d){
     cf_unused(d);
     //struct cf_stp_server* server = cf_stp_server_create(9851,"224.0.10.200",8888);
@@ -53,6 +81,7 @@ static void stp_server_test(void* d){
     cf_stp_server_set_multicast_msg(server,multicast_msg);
     cf_stp_server_listen(server,"test-topic",proccessor);
     cf_stp_server_listen(server,"query",stp_server_query_opt);
+    cf_stp_server_listen(server,"tcp-log",stp_server_tcp_log_opt);
     cf_stp_server_run(server);
     cf_stp_server_destroy(server);
 }
@@ -127,7 +156,7 @@ static void stp_client_unicast_test(void* d){
         struct cf_json* json = cf_stp_client_request(client,"test-topic",msg);
         if(json)
         {
-            printf("%s\n",cf_json_print(json));
+            cf_log(NULL,CF_LOG_DEBUG,"%s\n",cf_json_print(json));
             cf_json_destroy_object(json);
         }
         cf_json_destroy_object(msg);
@@ -145,9 +174,10 @@ int test_stp(){
     const char* test_transfer_file = "cf_stp/cf_stp_test";
     
     cf_threadpool_run(stp_client_unicast_test,( void*)test_transfer_file);
+    
     while(true){
         sleep(1);
-        printf("alloc_size=%ld\n",cf_allocator_alloc_size());
+        cf_log(NULL,CF_LOG_DEBUG,"alloc_size=%ld\n",cf_allocator_alloc_size());
     }
     return 0;
 }

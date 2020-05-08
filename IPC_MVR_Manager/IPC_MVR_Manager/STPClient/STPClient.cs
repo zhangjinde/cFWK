@@ -194,6 +194,8 @@ namespace IPC_MVR_Manager.STPClient
 			// = map["recv-buffer"] as byte[];
 			try
 			{
+				if (mMulticastSocket == null)
+					return;
 				byte[] buff = mMulticastSocket.EndReceive(ar, ref senderIP);
 				//System.Text.Encoding.UTF8.GetString(buff);
 				//server-ip
@@ -205,7 +207,8 @@ namespace IPC_MVR_Manager.STPClient
 				}
 				mMulticastSocket.BeginReceive(OnDataReceived, map);
 			}
-			catch { 
+			catch {
+				return;
 			}
 			
 		}

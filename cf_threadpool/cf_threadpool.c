@@ -3,12 +3,13 @@
 #include "cf_threadpool.h"
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_async_queue/cf_async_queue.h"
-
+//int pthread_cancel(pthread_t thread);//安卓库头文件无此函数
 struct _thread_item
 {
     pthread_t m_thread;
     pthread_mutex_t m_mutex;
     bool m_isbusy;
+    bool m_is_end;
     void* m_data;
     struct cf_async_queue* m_queue;
 };
@@ -16,7 +17,7 @@ struct _thread_item
 static void* _thread_item_run(void* arg){
     struct _thread_item *_this = (struct _thread_item*)arg;
     
-    while(true){
+    while(!_this->m_is_end){
         void (*func)(void*) = (void (*)(void*))cf_async_queue_pop(_this->m_queue);
         func(_this->m_data);
         _this->m_data = NULL;
@@ -50,7 +51,8 @@ static struct _thread_item* _create_thread_item(){
 static void _destroy_thread_item(void* _item)
 {
     struct _thread_item* item = (struct _thread_item* )_item;
-    pthread_cancel(item->m_thread);
+    item->m_is_end = true;
+    //pthread_cancel(item->m_thread);
     pthread_mutex_destroy(&item->m_mutex);
     cf_async_queue_delete(item->m_queue);
 };

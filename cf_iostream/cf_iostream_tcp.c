@@ -38,7 +38,6 @@ static int scp_stream_writeln(cf_iostream* stream,const char* str){
     int ret = send(tcp_stream->m_sock, &size, sizeof(size), 0);
     if(ret <= 0)
         return -1;
-    ret = 0;
     int send_cnt = 0;
     while(send_cnt < size){
         ret = send(tcp_stream->m_sock, str, size, 0);
@@ -54,6 +53,8 @@ static cf_iostream_vt tcp_stream_vt = {
     .close = scp_stream_close,
     .destroy = scp_stream_destroy
 };
+#include <signal.h>
+
 
 cf_iostream* cf_iostream_tcp_connect(const char* ipaddr,uint16_t port){
     int sock = socket(PF_INET,SOCK_STREAM , 0);
@@ -64,15 +65,17 @@ cf_iostream* cf_iostream_tcp_connect(const char* ipaddr,uint16_t port){
     //assert(tcp_stream->m_sock >= 0);
     struct sockaddr_in address;
     bzero(&address,sizeof(address));
-
+    
+    signal( SIGPIPE,SIG_IGN);
     //转换成网络地址
     address.sin_port = htons(port);
     address.sin_family = AF_INET;
     //地址转换
     address.sin_addr.s_addr = inet_addr(ipaddr);
-    fcntl(sock,F_SETFL,fcntl(sock,F_GETFL,0)|O_NONBLOCK);
+    int old_flags = fcntl(sock,F_GETFL,0);
+    fcntl(sock,F_SETFL,old_flags|O_NONBLOCK);
     
-    int ret = connect(sock, (struct sockaddr*) &address, sizeof(address));
+     int ret = connect(sock, (struct sockaddr*) &address, sizeof(address));
     if(ret != 0){
         fd_set wset;
         FD_ZERO(&wset);
@@ -86,6 +89,7 @@ cf_iostream* cf_iostream_tcp_connect(const char* ipaddr,uint16_t port){
             return NULL;
         }
     }
+    fcntl(sock,F_SETFL,old_flags);
     cf_iostream_tcp* tcp_stream = (cf_iostream_tcp*)cf_allocator_simple_alloc(sizeof(cf_iostream_tcp));
     if(tcp_stream == NULL)
     {

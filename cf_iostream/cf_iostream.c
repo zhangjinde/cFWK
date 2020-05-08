@@ -18,7 +18,7 @@ void cf_iostream_destroy(cf_iostream* stream){
 }
 /*****************标准输出****************************************/
 static int std_out_writeln( cf_iostream* stream,const char* str){
-    printf("%s",str);
+    return printf("%s",str);
 }
 
 static const cf_iostream_vt std_out_iostream_vt = {
@@ -34,7 +34,7 @@ cf_iostream* cf_iostream_from_std_out(){
 
 /*****************标准错误****************************************/
 static int std_err_writeln( cf_iostream* stream,const char* str){
-    fprintf( stderr,"%s", str );
+    return fprintf( stderr,"%s", str );
 }
 
 static const cf_iostream_vt std_err_iostream_vt = {

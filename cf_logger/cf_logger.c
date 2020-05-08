@@ -4,11 +4,12 @@
 #include <time.h>
 #include "cf_collection/cf_list.h"
 #include "cf_allocator/cf_allocator_simple.h"
-
+#include <pthread.h>
 #define LOG_LINE_SZ    1024
 
 typedef struct cf_logger{
     cf_log_level m_level;
+    pthread_mutex_t m_out_list_mutex;
     cf_list* m_out_list;    //cf_iostream* list
 }cf_logger;
 
@@ -22,6 +23,7 @@ static cf_logger* get_root_logger(){
             cf_allocator_simple_free(logger);
             logger = NULL;
         }
+        pthread_mutex_init(&logger->m_out_list_mutex,0);
         cf_log_add_out( logger,cf_iostream_from_std_out());
     }
     return logger;
@@ -29,11 +31,14 @@ static cf_logger* get_root_logger(){
 
 void cf_log_add_out(struct cf_logger* logger,cf_iostream* out){
     logger = logger == NULL ? get_root_logger(): logger;
+    pthread_mutex_lock(&logger->m_out_list_mutex);
     cf_list_push(logger->m_out_list,out);
+    pthread_mutex_unlock(&logger->m_out_list_mutex);
 }
 
 void cf_log_remove_out( cf_logger* logger,cf_iostream* out){
     logger = logger == NULL ? get_root_logger(): logger;
+    pthread_mutex_lock(&logger->m_out_list_mutex);
     for(cf_iterator iter = cf_list_begin(logger->m_out_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
     {
         if(cf_iterator_get(&iter) == out){
@@ -41,6 +46,7 @@ void cf_log_remove_out( cf_logger* logger,cf_iostream* out){
             break;
         }
     }
+    pthread_mutex_unlock(&logger->m_out_list_mutex);
 }
 
 void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
@@ -62,11 +68,13 @@ void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
               tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
     char line2[LOG_LINE_SZ];
     snprintf(line2,sizeof(line2),"%s--%s", time_str,line);
+    pthread_mutex_lock(&logger->m_out_list_mutex);
     for(cf_iterator iter = cf_list_begin(logger->m_out_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
         if(cf_iostream_writeln((cf_iostream*)cf_iterator_get(&iter) ,line2) < 0){
             cf_iterator_remove(&iter);
         }
     }
+    pthread_mutex_unlock(&logger->m_out_list_mutex);
 }
 cf_log_level cf_log_set_level( cf_logger* logger,cf_log_level level){
     logger = logger == NULL ? get_root_logger(): logger;

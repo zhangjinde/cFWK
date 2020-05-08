@@ -13,9 +13,10 @@ extern "C"{
 #define CF_STP_CLIENT_RECV_BUFF_SIZE    256
 
 
-struct cf_stp_context;
+typedef struct cf_stp_context cf_stp_context;
 struct cf_stp_server* cf_stp_server_create(uint16_t port ,const char* multicast_addr ,uint16_t multicast_port);
 void cf_stp_server_listen(struct cf_stp_server* server,const char* topic,struct cf_json* (*proccessor)(struct cf_stp_context* ,struct cf_json*));
+const char* cf_stp_context_get_client_ip(struct cf_stp_context* );
 void cf_stp_server_set_multicast_msg(struct cf_stp_server* server,struct cf_json* msg);
 int cf_stp_server_run(struct cf_stp_server* server);
 void cf_stp_server_destroy(struct cf_stp_server*server);

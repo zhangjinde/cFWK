@@ -42,13 +42,10 @@
             <TabItem Header="日志" HorizontalAlignment="Left" Height="19" VerticalAlignment="Top" Width="59">
                 <Grid Background="#FFE5E5E5">
                     <Button x:Name="logBtn" Content="开启" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="logBtn_Click"/>
-                    <RichTextBox x:Name="logPanel" HorizontalAlignment="Left" Height="184" Margin="28,52,0,0" VerticalAlignment="Top" Width="386">
-                        <FlowDocument>
-                            <Paragraph>
-                                <Run Text="RichTextBox"/>
-                            </Paragraph>
-                        </FlowDocument>
-                    </RichTextBox>
+                    <Button x:Name="clearLogBtn" Content="清空" HorizontalAlignment="Left" Margin="99,10,0,0" VerticalAlignment="Top" Width="75" Click="clearLogBtn_Click"/>
+                    <ScrollViewer HorizontalAlignment="Left" Height="257" Margin="0,34,0,0" VerticalAlignment="Top" Width="561">
+                        <TextBox x:Name="logPanel" HorizontalAlignment="Left" Height="257" TextWrapping="Wrap" VerticalAlignment="Top" Width="551"/>
+                    </ScrollViewer>
                 </Grid>
             </TabItem>
         </TabControl>

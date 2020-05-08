@@ -45,6 +45,7 @@ struct cf_stp_server{
 };
 struct cf_stp_context{
     int m_socket;
+    struct in_addr m_cli_addr;
     FILE* m_fd;   //用于文件传输模式
     size_t m_file_len;//传输文件长度
     size_t m_file_offset;//传输文件当前字节
@@ -389,7 +390,9 @@ void cf_stp_server_listen(struct cf_stp_server* server,const char* topic,struct 
     cf_hash_insert(server->m_processors,(void*)(unsigned long)topic,(void*)proccessor); 
 }
 
-
+const char* cf_stp_context_get_client_ip(struct cf_stp_context* c){
+    return inet_ntoa(c->m_cli_addr);
+}
 int cf_stp_server_run(struct cf_stp_server* server){
     struct cf_list* cli_list = cf_list_create(NULL);
     int max_fd = server->m_server_socket;
@@ -449,6 +452,7 @@ int cf_stp_server_run(struct cf_stp_server* server){
             {
                 struct cf_stp_context* context = (struct cf_stp_context*)cf_allocator_simple_alloc(sizeof(struct cf_stp_context));
                 context->m_socket = cli_sock;
+                context->m_cli_addr = cli_addr.sin_addr;
                 context->m_fd = NULL;
                 context->m_file_len = 0;
                 context->m_file_offset = 0;
