@@ -36,13 +36,13 @@ static int scp_stream_writeln(cf_iostream* stream,const char* str){
     cf_iostream_tcp* tcp_stream = IOSTREAM_TO_TCP_STREAM(stream);
     uint32_t size = strlen(str)+1;
     int ret = send(tcp_stream->m_sock, &size, sizeof(size), 0);
-    if(ret < 0)
+    if(ret <= 0)
         return -1;
     ret = 0;
     int send_cnt = 0;
-    while(ret < size){
+    while(send_cnt < size){
         ret = send(tcp_stream->m_sock, str, size, 0);
-        if(ret < 0)
+        if(ret <= 0)
             return -1;
         send_cnt += ret;
     }

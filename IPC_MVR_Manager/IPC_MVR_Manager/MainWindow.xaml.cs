@@ -17,6 +17,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Configuration;
+using System.Net.Sockets;
+using System.Net;
+using System.Windows.Media.Animation;
 
 namespace IPC_MVR_Manager
 {
@@ -31,6 +34,8 @@ namespace IPC_MVR_Manager
         Dictionary<string, JObject> clientMap = new Dictionary<string, JObject>();
         List<string> test = new List<string>();
         JObject mCurrentDev = null;
+        TcpListener logListener;
+        bool logOpen = false;
         void onMulticastMsg(JObject obj)
         {
             if (!clientMap.ContainsKey(obj["server-ip"].ToString()))
@@ -44,7 +49,6 @@ namespace IPC_MVR_Manager
             //msg["c#-test"] = "123456";
             //msg = client.Request("test-topic", msg);
             //Console.WriteLine(" {0} 应答消息 {1}  ", obj["server-ip"], JsonConvert.SerializeObject(msg));
-
         }
         public MainWindow()
         {
@@ -60,9 +64,6 @@ namespace IPC_MVR_Manager
             comboBoxHost.SelectedIndex = 0;
 
             //client.Connect("192.168.10.74", 8098);
-
-
-            
             
             listBox.ItemsSource = clientIP;
             String str = ConfigurationManager.AppSettings["TmpPath"];
@@ -86,10 +87,66 @@ namespace IPC_MVR_Manager
                 textIP.Text = cfa.AppSettings.Settings["input-addr"].Value.ToString();
             }
             
-
             cfa.Save();
 
         }
+        private TcpClient logClient = null;
+        void resetLogListener() {
+            if (logListener != null)
+            {
+                logListener.Stop();
+            }
+            if (logClient != null)
+                logClient.Close();
+            logClient = null;
+            logListener = new TcpListener(IPAddress.Any, 0);
+            logListener.Start();
+            logListener.BeginAcceptTcpClient(doAcceptTcpClientCallback, null);
+        }
+
+        private void doAcceptTcpClientCallback(IAsyncResult ar) {
+            logClient = logListener.EndAcceptTcpClient(ar);
+
+            Dictionary<string, object> readParams = new Dictionary<string, object>();
+            readParams["logClient"] = logClient;
+            byte[] buffer = new byte[1024];
+            readParams["buffer"] = buffer;
+            logClient.GetStream().BeginRead(buffer,0,4,doRecvSize, readParams);
+        }
+        private void doRecvSize(IAsyncResult ar) {
+            Dictionary<string, object> readParams = ar.AsyncState as Dictionary<string, object>;
+            TcpClient logClient = readParams["logClient"] as TcpClient;
+            byte[] buffer = readParams["buffer"] as byte[];
+            try
+            {
+                logClient.GetStream().EndRead(ar);
+                UInt32 size = BitConverter.ToUInt32(buffer, 0);
+                readParams["size"] = BitConverter.GetBytes(size);
+                logClient.GetStream().BeginRead(buffer, 0, (int)size, doRecvLog, readParams);
+
+            }
+            catch {
+                logClient = null;
+                
+                listBox.Dispatcher.Invoke(() => { logBtn.Content = "开启"; });
+
+            }
+            
+
+        }
+        private void doRecvLog(IAsyncResult ar)
+        {
+            Dictionary<string, object> readParams = ar.AsyncState as Dictionary<string, object>;
+            TcpClient logClient = readParams["logClient"] as TcpClient;
+            byte[] buffer = readParams["buffer"] as byte[];
+            logClient.GetStream().EndRead(ar);
+            String log_str = System.Text.Encoding.UTF8.GetString(buffer, 0, BitConverter.ToInt32(( readParams["size"] as byte[]),0) -1);
+            logClient.GetStream().BeginRead(buffer, 0, 4, doRecvSize, readParams);
+            
+            Action<string> actionDelegate = (str) => { logPanel.AppendText( str); };
+            listBox.Dispatcher.Invoke(actionDelegate, log_str);
+        }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -325,6 +382,33 @@ namespace IPC_MVR_Manager
             client.ListenMultiCastMsg(onMulticastMsg);
             client.ListenClose(onClientClose);
             client.Start();
+        }
+
+        private void logBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (client.IsConnected == false) {
+                MessageBox.Show("未连接设备");
+                return;
+            }
+
+            if (logBtn.Content.ToString() == "开启")
+            {
+                resetLogListener();
+                JObject obj = new JObject();
+                obj["opt"] = "open";
+                obj["port"] = ((IPEndPoint)logListener.LocalEndpoint).Port;
+                obj = client.Request("tcp-log", obj);
+                if (!obj.ContainsKey("reply"))
+                {
+                    MessageBox.Show("该设备尚不支持远程log操作");
+                    return;
+                }
+                logBtn.Content = "关闭";
+            }
+            else {
+                resetLogListener();
+                logBtn.Content = "开启";
+            }
         }
     }
 }

@@ -63,7 +63,9 @@ void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
     char line2[LOG_LINE_SZ];
     snprintf(line2,sizeof(line2),"%s--%s", time_str,line);
     for(cf_iterator iter = cf_list_begin(logger->m_out_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
-        cf_iostream_writeln((cf_iostream*)cf_iterator_get(&iter) ,line2);
+        if(cf_iostream_writeln((cf_iostream*)cf_iterator_get(&iter) ,line2) < 0){
+            cf_iterator_remove(&iter);
+        }
     }
 }
 cf_log_level cf_log_set_level( cf_logger* logger,cf_log_level level){

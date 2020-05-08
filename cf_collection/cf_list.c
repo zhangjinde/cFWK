@@ -135,7 +135,14 @@ static const struct cf_iterator_vt cf_list_iterator_vt =
     .remove = _remove
     
 };
-
+void cf_list_remove_item(cf_list* list,void* d){
+    for(cf_iterator iter = cf_list_begin(list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
+        if(cf_iterator_get(&iter) == d){
+            cf_iterator_remove(&iter);
+            break;
+        }
+    }
+}
 struct cf_iterator cf_list_begin(struct cf_list* list){
     struct cf_iterator iter;
     memset(&iter,0,sizeof(iter));
