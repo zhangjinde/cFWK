@@ -16,13 +16,10 @@ typedef struct cf_logger cf_logger;
 //logger == NULL 则操作全局logger对象
 void cf_log( cf_logger* logger,cf_log_level level,const char* format,...);
 void cf_log_add_out( cf_logger* logger,cf_iostream* out);
+//返回旧的level
+cf_log_level cf_log_set_level( cf_logger* logger,cf_log_level level);
+//会自动释放out资源
 void cf_log_remove_out( cf_logger* logger,cf_iostream* out);
-//void cf_log(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...);
-//void cf_logger_dbg(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...);
-//void cf_logger_error(struct cf_logger* logger,const char*file,const char* func,int line,const char* format,...);
-//#define cf_Log_g(level,format,args...)  cf_log(cf_logger_root(),format, #args)
-//#define cf_logger_root_dgb(format,args...)  cf_logger_dbg(cf_logger_root(),__FILE__,__func__,__LINE__,format, #args)
-//#define cf_logger_root_error(format,args...)  cf_logger_error(cf_logger_root(),__FILE__,__func__,__LINE__,format, #args)
 
 #ifdef __cplusplus
 }

@@ -24,6 +24,7 @@ cf_string* cf_string_create_frome_c_str(const char* c_str){
     if(str ){
         str->m_str = (char*)cf_allocator_simple_alloc(size);
         str->m_capacity = size;
+        strcpy(str->m_str,c_str);
     }
     return str;
 }

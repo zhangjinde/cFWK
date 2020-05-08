@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 typedef struct cf_iostream_file{
-    uint32_t m_flags;
     cf_iostream m_stream;
+    uint32_t m_flags;
     cf_string* m_filePath;
     FILE* m_fp;
 }cf_iostream_file;
@@ -60,9 +60,9 @@ static void file_stream_destroy(cf_iostream* stream){
     cf_iostream_file* file_stream = IOSTREAM_TO_FILE_STREAM(stream);
     file_stream_close(stream);
     cf_string_destroy(file_stream->m_filePath);
+    file_stream->m_filePath = NULL;
     cf_allocator_simple_free((void*)file_stream);
 }
-
 
 static const cf_iostream_vt file_iostream_vt = {
     .writeln = file_stream_writeln,
@@ -82,6 +82,7 @@ cf_iostream* cf_iostream_from_file(const char* file_name,uint32_t flags){
             cf_allocator_simple_free(stream);
             return NULL;
         }
+
         stream->m_stream.m_vt = &file_iostream_vt;
     }
     return &stream->m_stream;

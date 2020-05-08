@@ -61,10 +61,16 @@ void cf_log(struct cf_logger* logger,cf_log_level level,const char* format,...){
     snprintf(time_str,sizeof(time_str),"%02d-%02d-%02d %02d:%02d:%02d", (tm_now->tm_year+1900-2000), tm_now->tm_mon+1, tm_now->tm_mday,
               tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
     char line2[LOG_LINE_SZ];
-    snprintf(line2,sizeof(line2),"%s--%s\n", time_str,line);
+    snprintf(line2,sizeof(line2),"%s--%s", time_str,line);
     for(cf_iterator iter = cf_list_begin(logger->m_out_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
         cf_iostream_writeln((cf_iostream*)cf_iterator_get(&iter) ,line2);
     }
+}
+cf_log_level cf_log_set_level( cf_logger* logger,cf_log_level level){
+    logger = logger == NULL ? get_root_logger(): logger;
+    cf_log_level _level = logger->m_level;
+    logger->m_level = level;
+    return _level;
 }
 
 

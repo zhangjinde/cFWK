@@ -4,9 +4,6 @@ typedef struct cf_iostream cf_iostream;
 
 #define CF_IOS_READ 0x01
 #define CF_IOS_WRITE 0x02
-typedef enum cf_iostream_flags{
-    on
-}cf_iostream_flags;
 
 typedef struct cf_iostream_vt{
     // 返回写入字节数, 负数表示异常
