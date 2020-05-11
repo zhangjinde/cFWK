@@ -192,10 +192,10 @@ namespace IPC_MVR_Manager.STPClient
 			Dictionary<String, Object> map = ar.AsyncState as Dictionary<String, Object>;
 			IPEndPoint senderIP = new IPEndPoint(IPAddress.Any, 0);
 			// = map["recv-buffer"] as byte[];
+			if (mMulticastSocket == null)
+				return;
 			try
 			{
-				if (mMulticastSocket == null)
-					return;
 				byte[] buff = mMulticastSocket.EndReceive(ar, ref senderIP);
 				//System.Text.Encoding.UTF8.GetString(buff);
 				//server-ip
