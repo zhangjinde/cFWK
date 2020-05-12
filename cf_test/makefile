@@ -19,7 +19,7 @@ src=  $(CFWK_DIR)/cf_allocator/cf_allocator_simple.c \
       $(CFWK_DIR)/cf_json/cf_json.c \
       $(CFWK_DIR)/cf_json/cJSON/cJSON.c \
       $(CFWK_DIR)/cf_stp/cf_stp.c \
-      main.c test_log.c test_stp.c
+      main.c test_log.c test_stp.c test_async_queue.c
 obj := $(src:c=o)
 
 all:	$(obj)
