@@ -39,6 +39,12 @@ struct cf_async_queue* cf_async_queue_create(void (*free_data)(void*)){
     }
     return queue;
 }
+int cf_async_queue_length(struct cf_async_queue* queue){
+    pthread_mutex_lock(&queue->m_mutex);
+    int len = cf_list_length(queue->m_queue); 
+    pthread_mutex_unlock(&queue->m_mutex);
+    return len;
+}
 void* cf_async_queue_pop(struct cf_async_queue* queue)
 {
     void* item = NULL;
