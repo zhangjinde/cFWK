@@ -54,7 +54,7 @@ void* cf_async_queue_pop(struct cf_async_queue* queue)
     struct timespec time;
     gettimeofday(&now, NULL);
     time.tv_sec = now.tv_sec+ queue->m_timeout / 1000;
-    time.tv_nsec = now.tv_usec*1000 + queue->m_timeout % 1000 *1000000 ;
+    time.tv_nsec = now.tv_usec*1000 + queue->m_timeout % 1000 *1000000;
     if(time.tv_nsec > 1000000000){  //用比较 加 减 代替乘除求余
         time.tv_sec += 1;
         time.tv_nsec -= 1000000000;
