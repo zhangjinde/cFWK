@@ -90,6 +90,21 @@ void* cf_async_queue_try_pop(struct cf_async_queue* queue)
     pthread_mutex_unlock(&queue->m_mutex);
     return item;
 }
+bool cf_async_queue_try_push(struct cf_async_queue* queue,void* item){
+    pthread_mutex_lock(&queue->m_mutex);
+    int max_size = queue->m_max_size;
+    if(max_size > 0 && cf_list_length(queue->m_queue) >= max_size ){
+        pthread_mutex_unlock(&queue->m_mutex);
+        return false;
+    }
+    cf_list_push(queue->m_queue,item);
+    if(cf_list_length(queue->m_queue) == 1)
+    {
+        pthread_cond_signal(&queue->m_condition);
+    }
+    pthread_mutex_unlock(&queue->m_mutex);
+    return true;
+}
 //在push阻塞时候(queue满)，queue释放，未做处理，待完善
 void cf_async_queue_push(struct cf_async_queue* queue,void* item){
     pthread_mutex_lock(&queue->m_mutex);

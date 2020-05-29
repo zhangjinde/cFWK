@@ -15,6 +15,7 @@ void* cf_async_queue_pop(struct cf_async_queue*);
 int cf_async_queue_length(struct cf_async_queue*);
 void* cf_async_queue_try_pop(struct cf_async_queue*);
 void cf_async_queue_push(struct cf_async_queue*,void* item);
+bool cf_async_queue_try_push(struct cf_async_queue*,void* item);
 void cf_async_queue_delete(struct cf_async_queue*);
 
 #ifdef __cplusplus
