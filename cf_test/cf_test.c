@@ -7,6 +7,9 @@
 #define HUGE_STRING_LEN	8192
 #define STRING_MAX 256
 #define STRING_INC		256
+
+#define MAX_TEST_CASES		256
+
 static void* _malloc(int len){
     return malloc(len);
 }
@@ -108,6 +111,37 @@ void cf_test_run(cf_test* tc){
 	tc->jumpBuf = 0;
 }
 
+typedef struct cf_suite {
+    int size;
+    int len;
+    cf_test** list;
+}cf_suite;
+
+cf_suite* cf_suite_create(void){
+    cf_suite* suite = _malloc(sizeof(cf_suite));
+    memset(suite,0,sizeof(cf_suite));
+    suite->list = _malloc(sizeof(cf_test*)*MAX_TEST_CASES);
+    suite->size = MAX_TEST_CASES;
+    return suite;
+}
+void cf_suite_add_test(cf_suite* suite,cf_test* tc){
+    if(suite->len == suite->size)
+    {
+        cf_test* new_list = _malloc(sizeof(cf_test)*(suite->len+MAX_TEST_CASES));
+        memcpy(new_list,suite->list,suite->len);
+        _free(suite->list);
+        suite->list = new_list;
+        suite->size = suite->len+MAX_TEST_CASES;
+    }
+    suite->list[suite->len++] = tc;
+}
+void cf_suite_run(cf_suite* suite){
+    for(int i = 0;i < suite->len;i++)
+    {
+        cf_test_run(suite->list[i]);
+    }
+
+}
 void cf_assert(cf_test* tc,const char* file,int line,const char* msg,bool cond){
     if(cond)    return;
     tc->failed = true;
