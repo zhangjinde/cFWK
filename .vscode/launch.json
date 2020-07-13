@@ -8,7 +8,7 @@
             "name": "(gdb) 启动",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/cf_test/test",
+            "program": "${workspaceFolder}/cf_test/cf_test_sample ",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
