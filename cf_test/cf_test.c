@@ -20,7 +20,7 @@ static void* _realloc(void *mem,int size){
     return realloc(mem,size);
 }
 
-typedef struct _string{
+typedef struct _string{    
     int len;
     int size;
     char* buff;
@@ -77,7 +77,13 @@ static const char* _string_cstring(_string* s){
     return s->buff;
 }
 
+typedef enum cf_test_type{
+    CF_TEST_TYPE_TEST = 0,
+    CF_TEST_TYPE_SUITE
+}cf_test_type_e;
+
 typedef struct cf_test{
+    cf_test_type_e type;
     const char* name;
     _string* msg;
     void(*func)(cf_test*);
@@ -88,6 +94,7 @@ typedef struct cf_test{
 cf_test* cf_test_create(const char* name,void(*test_func)(cf_test*)){
     cf_test* tc = _malloc(sizeof(cf_test));
     memset(tc,0,sizeof(cf_test));
+    tc->type = CF_TEST_TYPE_TEST;
     tc->name = name;
     tc->func = test_func;
     return tc;
@@ -119,38 +126,75 @@ void cf_test_run(cf_test* tc){
 }
 
 typedef struct cf_suite {
-    int size;
+    cf_test_type_e type;
+    int list_size;
+    int list_len;
     int fail_count;
     int count;
     cf_test** list;
+    _string* summary;
+    _string* msg_lines;
     _string* msg;
 }cf_suite;
 
 cf_suite* cf_suite_create(void){
     cf_suite* suite = _malloc(sizeof(cf_suite));
     memset(suite,0,sizeof(cf_suite));
+    suite->type = CF_TEST_TYPE_SUITE;
     suite->list = _malloc(sizeof(cf_test*)*MAX_TEST_CASES);
-    suite->size = MAX_TEST_CASES;
+    suite->list_size = MAX_TEST_CASES;
+    suite->summary = _string_create();
+    suite->msg_lines = _string_create();
     suite->msg = _string_create();
     return suite;
 }
 
 void cf_suite_destroy(cf_suite* suite){
-    _free(suite->list);
-    _free(suite->msg);
-    _free(suite);
+    if(suite == NULL) return;
+    if(suite->type == CF_TEST_TYPE_TEST)
+        cf_test_destroy((cf_test*)suite);
+    else{
+        for(int i = 0;i < suite->list_len;i++)
+        {
+            if(suite->list[i]->type == CF_TEST_TYPE_TEST){
+                cf_test_destroy(suite->list[i]);
+            }
+            else
+            {
+                cf_suite_destroy((cf_suite*)suite->list[i]);
+            }
+        }
+        _free(suite->list);
+        _free(suite->msg);
+        _free(suite->msg_lines);
+        _free(suite->summary);
+        _free(suite);
+    }
 }
 
 void cf_suite_add_test(cf_suite* suite,cf_test* tc){
-    if(suite->count == suite->size)
+    if(suite->list_len == suite->list_size)
     {
-        cf_test* new_list = _malloc(sizeof(cf_test*)*(suite->count+MAX_TEST_CASES));
-        memcpy(new_list,suite->list,suite->count);
+        cf_test* new_list = _malloc(sizeof(cf_test*)*(suite->list_len+MAX_TEST_CASES));
+        memcpy(new_list,suite->list,suite->list_len);
         _free(suite->list);
         suite->list = (cf_test**)new_list;
-        suite->size = suite->count+MAX_TEST_CASES;
+        suite->list_size = suite->list_len+MAX_TEST_CASES;
     }
-    suite->list[suite->count++] = tc;
+    suite->list[suite->list_len++] = tc;
+    suite->count++;
+}
+void cf_suite_add_suite(cf_suite* suite,cf_suite* suite_src){
+    if(suite->list_len == suite->list_size)
+    {
+        cf_test* new_list = _malloc(sizeof(cf_test*)*(suite->list_len+MAX_TEST_CASES));
+        memcpy(new_list,suite->list,suite->list_len);
+        _free(suite->list);
+        suite->list = (cf_test**)new_list;
+        suite->list_size = suite->list_len+MAX_TEST_CASES;
+    }
+    suite->list[suite->list_len++] = (cf_test*)suite_src;
+    suite->count += suite_src->count;
 }
 const char* cf_suite_msg(cf_suite* suite){
     if(suite->msg)
@@ -161,13 +205,19 @@ const char* cf_suite_msg(cf_suite* suite){
 
 static void _cf_suite_statistical(cf_suite* suite){
     int fail_count = 0;
-    if(suite->msg)
-        _string_clear(suite->msg);
-    else
-        suite->msg = _string_create();
-    _string_append(suite->msg, "\n");
-    for(int i = 0 ; i < suite->count ; ++i)
-        _string_append(suite->msg, suite->list[i]->failed ? "F":".");
+    _string_clear(suite->msg);
+    _string_clear(suite->msg_lines);
+    _string_clear(suite->summary);
+    for(int i = 0 ; i < suite->list_len ; ++i){
+        if(suite->list[i]->type == CF_TEST_TYPE_TEST)
+            _string_append(suite->summary, suite->list[i]->failed ? "F":".");
+        else{
+            cf_suite* sub_suite = (cf_suite*)suite->list[i];
+            _string_append(suite->summary, _string_cstring(sub_suite->summary) );
+        }
+    }
+        
+    _string_append(suite->msg, _string_cstring(suite->summary));    
     _string_append(suite->msg, "\n");
     if (suite->fail_count == 0)
 	{
@@ -182,16 +232,29 @@ static void _cf_suite_statistical(cf_suite* suite){
 		else
 			_string_append_format(suite->msg, "There were %d failures:\n", suite->fail_count);
 
-		for (int i = 0 ; i < suite->count ; ++i)
+		for (int i = 0 ; i < suite->list_len ; ++i)
 		{
-			cf_test* tc = suite->list[i];
-			if (tc->failed)
-			{
-				fail_count++;
-				_string_append_format(suite->msg, "%d) %s: %s\n",
-					fail_count, cf_test_name(tc), cf_test_msg(tc));
-			}
+            if(suite->list[i]->type == CF_TEST_TYPE_TEST){
+                cf_test* tc = suite->list[i];
+                if (tc->failed)
+                {
+                    fail_count++;
+                    _string_append_format(suite->msg_lines, "%d) %s: %s\n",
+                        fail_count, cf_test_name(tc), cf_test_msg(tc));
+                }
+
+            }
+            else
+            {
+                cf_suite* ts = (cf_suite*)suite->list[i];
+                if (ts->fail_count > 0)
+                {
+                    fail_count += ts->fail_count;
+                    _string_append(suite->msg_lines, _string_cstring(ts->msg_lines));
+                }
+            }
 		}
+        _string_append(suite->msg, _string_cstring(suite->msg_lines));    
 		_string_append(suite->msg, "\n!!!FAILURES!!!\n");
 
 		_string_append_format(suite->msg, "Runs: %d ",   suite->count);
@@ -199,14 +262,23 @@ static void _cf_suite_statistical(cf_suite* suite){
 		_string_append_format(suite->msg, "Fails: %d\n",  suite->fail_count);
     }
     
+    
 }
 
 void cf_suite_run(cf_suite* suite){
-    for(int i = 0;i < suite->count;i++)
+    for(int i = 0;i < suite->list_len;i++)
     {
-        cf_test_run(suite->list[i]);
-        if(suite->list[i]->failed){
-            suite->fail_count++;
+        if(suite->list[i]->type == CF_TEST_TYPE_TEST){
+            cf_test_run(suite->list[i]);
+            if(suite->list[i]->failed){
+                suite->fail_count++;
+            }
+        }
+        else
+        {
+            cf_suite* ts = (cf_suite*)suite->list[i];
+            cf_suite_run(ts);
+            suite->fail_count += ts->fail_count;
         }
     }
     _cf_suite_statistical(suite);

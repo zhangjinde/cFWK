@@ -39,21 +39,21 @@ struct cf_list* cf_list_create(void (*free_data)(void*)){
     }
     return list;
 }
-
-void cf_list_delete(struct cf_list* list){
-    if(list)
+void cf_list_clear(cf_list* list){
+    if(list == NULL)    return;
+    void* data = cf_list_take_front(list);    
+    while(data)
     {
-        void* data = cf_list_take_front(list);
-        
-        while(data)
-        {
-            if(list->m_free_data)
-                list->m_free_data(data);
-            data = cf_list_take_front(list);
-        }
-        cf_allocator_simple_free(list->m_head);
-        cf_allocator_simple_free(list);
+        if(list->m_free_data)
+            list->m_free_data(data);
+        data = cf_list_take_front(list);
     }
+}
+void cf_list_destroy(struct cf_list* list){
+    if(list == NULL)    return;
+    cf_list_clear(list);
+    cf_allocator_simple_free(list->m_head);
+    cf_allocator_simple_free(list);
 }
 
 bool cf_list_is_empty(const struct cf_list* list){
@@ -151,31 +151,3 @@ struct cf_iterator cf_list_begin(struct cf_list* list){
     iter.m_container = list;
     return iter;
 }
-
-#ifdef CF_LIST_TEST
-/*************************
- * gcc -g -DCF_LIST_TEST -I../ cf_list.c cf_iterator.c ../cf_allocator/cf_allocator_simple.c -o cf_list_test
- * *********************/
-#include <stdio.h>
-int main(){
-
-    struct cf_list* list = cf_list_create(NULL);
-    cf_list_push(list,(void*)123);
-    cf_list_push(list,(void*)456);
-    cf_list_push(list,(void*)789);
-    printf("for:\n");
-    for(struct cf_iterator iter = cf_list_begin(list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
-    {
-        long long x = (long long)cf_iterator_get(&iter);
-        printf("x=%lld\n",x);
-    }
-
-    printf("take front:\n");
-    while(cf_list_length(list)>0){
-        long long x = (long long)cf_list_take_front(list);
-        printf("x=%lld\n",x);
-    }
-    cf_list_delete(list);
-    return 0;
-}
-#endif//CF_LIST_TEST

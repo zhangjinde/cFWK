@@ -10,6 +10,7 @@ typedef struct cf_suite cf_suite;
 cf_suite* cf_suite_create(void);
 void cf_suite_destroy(cf_suite* suite);
 void cf_suite_add_test(cf_suite* suite,cf_test* tc);
+void cf_suite_add_suite(cf_suite* suite,cf_suite* src);
 void cf_suite_run(cf_suite* suite);
 const char*  cf_suite_msg(cf_suite* suite);
 
