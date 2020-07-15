@@ -8,8 +8,8 @@ void cf_mod_clear(void);
 cf_iterator cf_mod_begin();
 void cf_mod_set_name(cf_mod* mod,const char* name);
 void cf_mod_set_version(cf_mod* mod,uint32_t version);
-void cf_mod_set_init(cf_mod* mod,void(*init_f)(void));
-void cf_mod_set_deinit(cf_mod* mod,void(*deinit_f)(void));
+void cf_mod_set_load(cf_mod* mod,void(*load)(void));
+void cf_mod_set_unload(cf_mod* mod,void(*unload)(void));
 const char* cf_mod_get_name(cf_mod* mod);
 cf_mod* cf_mod_create(void);
 #define CF_MOD_MK_VERSION(major,minor,revision)    ((major << 16) | (minor << 8) | revision)

@@ -11,6 +11,7 @@ src=  $(CFWK_DIR)/cf_test/cf_test.c \
 	  $(CFWK_DIR)/cf_module/cf_module.c \
 	  $(CFWK_DIR)/cf_factory/cf_factory.c \
 	  $(CFWK_DIR)/cf_factory/cf_element.c \
+	  $(CFWK_DIR)/cf_factory/cf_element_class.c \
 	  $(CFWK_DIR)/cf_test_case/cf_list_test.c \
 	  $(CFWK_DIR)/cf_test_case/cf_module_test.c \
 	  $(CFWK_DIR)/cf_test_case/cf_factory_test.c \

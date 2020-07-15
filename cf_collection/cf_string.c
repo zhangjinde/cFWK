@@ -16,15 +16,16 @@ cf_string* cf_string_create(void){
     }
     return str;
 }
-cf_string* cf_string_create_frome_c_str(const char* c_str){
-    size_t size = strlen(c_str);
+cf_string* cf_string_create_from_c_str(const char* c_str){
+    size_t size = c_str == NULL ? 0 : strlen(c_str);
     if(size+1 < CF_STRING_DEFAULT_CAPACITY)
         size = CF_STRING_DEFAULT_CAPACITY;
     cf_string* str = (cf_string*)cf_allocator_simple_alloc(sizeof(cf_string));
     if(str ){
         str->m_str = (char*)cf_allocator_simple_alloc(size);
         str->m_capacity = size;
-        strcpy(str->m_str,c_str);
+        if(c_str != NULL)
+            strcpy(str->m_str,c_str);
     }
     return str;
 }
