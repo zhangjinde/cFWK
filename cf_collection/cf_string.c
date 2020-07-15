@@ -28,6 +28,9 @@ cf_string* cf_string_create_frome_c_str(const char* c_str){
     }
     return str;
 }
+bool cf_string_equels_cstr(cf_string* str,const char* c_str){
+    return strcmp(str->m_str,c_str) == 0;
+}
 void cf_string_set(cf_string* str,const char* c_str){
     if(strlen(c_str)+1 < str->m_capacity){
         str->m_capacity = strlen(c_str)+CF_STRING_DEFAULT_CAPACITY;
