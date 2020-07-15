@@ -21,7 +21,7 @@ cf_suite* get_factory_test_suite(){
 
 static void test_mod_load_func(void){
     cf_factory* factory = cf_factory_create("test_factory");
-    cf_element_class* elem_class = cf_element_create_class("test_elem");
+    cf_element_class* elem_class = cf_element_class_create("test_elem");
     cf_factory_rigster_element(factory,elem_class);
     cf_factory_add_factory(factory);
 }

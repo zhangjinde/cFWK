@@ -7,7 +7,7 @@ extern "C"{
 
 typedef struct cf_string cf_string;
 cf_string* cf_string_create(void);
-cf_string* cf_string_create_from_c_str(const char* c_str);
+cf_string* cf_string_create_from_cstr(const char* c_str);
 bool cf_string_equels_cstr(cf_string* str,const char* c_str);
 void cf_string_set(cf_string* str,const char* c_str);
 const char* cf_string_c_str(cf_string* str);

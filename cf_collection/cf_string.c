@@ -16,7 +16,7 @@ cf_string* cf_string_create(void){
     }
     return str;
 }
-cf_string* cf_string_create_from_c_str(const char* c_str){
+cf_string* cf_string_create_from_cstr(const char* c_str){
     size_t size = c_str == NULL ? 0 : strlen(c_str);
     if(size+1 < CF_STRING_DEFAULT_CAPACITY)
         size = CF_STRING_DEFAULT_CAPACITY;

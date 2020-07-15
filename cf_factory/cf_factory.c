@@ -1,5 +1,7 @@
 #include <stddef.h>
 #include <string.h>
+#include <assert.h>
+#include <stdio.h>
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_collection/cf_string.h"
 #include "cf_collection/cf_list.h"
@@ -10,7 +12,7 @@ typedef struct cf_factory{
 }cf_factory;
 cf_factory* cf_factory_create(const char* factory_name){
     cf_factory* f = cf_allocator_simple_alloc(sizeof(cf_factory));
-    f->name = cf_string_create_from_c_str(factory_name);
+    f->name = cf_string_create_from_cstr(factory_name);
     f->elem_class_list = cf_list_create(NULL);
     return f;
 }
@@ -48,4 +50,14 @@ const char* cf_factory_get_name(cf_factory* factory)
 
 void cf_factory_rigster_element(cf_factory* factory,cf_element_class* elem_class){
     cf_list_push(factory->elem_class_list,elem_class);
+}
+void cf_factory_unrigster_element_by_name(cf_factory* factory,const char* class_name){
+    for(cf_iterator it = cf_list_begin(factory->elem_class_list);!cf_iterator_is_end(&it);cf_iterator_next(&it)){
+        cf_element_class* e_class = (cf_element_class*)cf_iterator_get(&it);
+        if(strcmp(cf_element_class_get_name(e_class),class_name) == 0)
+        {
+            cf_iterator_remove(&it);
+            break;
+        }
+    }
 }

@@ -6,6 +6,7 @@ void cf_mod_register(cf_mod* info);
 int cf_mod_count(void);
 void cf_mod_clear(void);
 cf_iterator cf_mod_begin();
+void cf_mod_add_dep(cf_mod* mod,const char* mod_name);
 void cf_mod_set_name(cf_mod* mod,const char* name);
 void cf_mod_set_version(cf_mod* mod,uint32_t version);
 void cf_mod_set_load(cf_mod* mod,void(*load)(void));
