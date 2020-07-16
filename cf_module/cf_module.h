@@ -15,7 +15,7 @@ const char* cf_mod_get_name(cf_mod* mod);
 cf_mod* cf_mod_create(void);
 #define CF_MOD_MK_VERSION(major,minor,revision)    ((major << 16) | (minor << 8) | revision)
 #define CF_MOD_INIT(mod_init_func)    \
-    static void __attribute__((constructor)) _mod_ ## mod_info ## _init(){\
+    static void __attribute__((constructor)) _mod_ ## mod_init_func ## _init(){\
         cf_mod* mod = cf_mod_create();  \
         mod_init_func(mod); \
         cf_mod_register(mod); \
