@@ -51,6 +51,7 @@ const char* cf_factory_get_name(cf_factory* factory)
 void cf_factory_rigster_element(cf_factory* factory,cf_element_class* elem_class){
     cf_list_push(factory->elem_class_list,elem_class);
 }
+
 void cf_factory_unrigster_element_by_name(cf_factory* factory,const char* class_name){
     for(cf_iterator it = cf_list_begin(factory->elem_class_list);!cf_iterator_is_end(&it);cf_iterator_next(&it)){
         cf_element_class* e_class = (cf_element_class*)cf_iterator_get(&it);
