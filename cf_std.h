@@ -4,4 +4,7 @@
 #include <assert.h>
 #define cf_assert(cond) assert(cond)
 
+#define CF_OK   0
+#define CF_FAILURE   -1
+
 #endif//CF_STD_H

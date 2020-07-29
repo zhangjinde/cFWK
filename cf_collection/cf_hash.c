@@ -12,7 +12,7 @@ struct _hash_item
     void* value;
 };
 
-struct cf_hash
+typedef struct cf_hash
 {
     size_t (*m_hash_func)(void*);
     bool (*m_key_equal_func)(void*,void*);
@@ -24,7 +24,7 @@ struct cf_hash
     uint8_t m_used_flag[CF_DEFAULT_HASH_WIDTH/8 + (CF_DEFAULT_HASH_WIDTH%8 > 0)]; 
     //每一个item对应一bit，0表示未冲突，1表示冲突，如果冲突，则对应value实际为冲突list指针
     uint8_t m_conflict_flag[CF_DEFAULT_HASH_WIDTH/8 + (CF_DEFAULT_HASH_WIDTH%8 > 0)];   
-};
+}cf_hash;
 
 size_t cf_hash_str_hash(void* key){
     uint32_t sum = 0;
@@ -63,7 +63,7 @@ void cf_hash_delete(struct cf_hash* hash){
                             hash->m_value_free_func(item->value);
                         cf_allocator_simple_free(item);
                     }
-                    cf_list_delete((struct cf_list*)hash->m_items[inx].value);
+                    cf_list_destroy((struct cf_list*)hash->m_items[inx].value);
                 }
                 else
                 {

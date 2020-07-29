@@ -8,7 +8,7 @@
 extern "C"{
 #endif
 
-struct cf_hash;
+typedef struct cf_hash cf_hash;
 size_t cf_hash_str_hash(void* key);
 bool cf_hash_str_equal(void* key1,void* key2);
 struct cf_hash* cf_hash_create(size_t (*hash_func)(void*),bool (*key_equal_func)(void*,void*),void (*key_free_func)(void*),void (*value_free_func)(void*));

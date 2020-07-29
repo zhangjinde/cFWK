@@ -3,6 +3,7 @@
 #include "cf_element_class.h"
 #include "cf_collection/cf_string.h"
 #include "cf_allocator/cf_allocator_simple.h"
+#include "cf_logger/cf_logger.h"
 #include "cf_pad.h"
 #include "cf_std.h"
 typedef struct cf_element{
@@ -57,8 +58,11 @@ cf_element* cf_element_create(const char* elem_name,cf_element_class* e_class){
     e->elem_name = cf_string_create_from_cstr(elem_name);
     e->elem_class = e_class;
     cf_element_constructor constructor = cf_element_class_get_constructor(e_class);
-    if(constructor != NULL)
-        constructor(e);
+    if(constructor != NULL && constructor(e) != CF_OK){
+        cf_string_destroy(e->elem_name);
+        cf_allocator_simple_free(e);
+        e = NULL;
+    }
     return e;
 }
 bool cf_element_link(cf_element* elem1,cf_element* elem2){
@@ -73,7 +77,7 @@ void cf_element_set_attr(cf_element* elem,const char* attr_name,void* val){
     cf_assert(elem != NULL );
     cf_element_attr_write_method write_func = cf_element_class_get_attr_write_method(elem->elem_class,attr_name);
     if(write_func)
-        write_func(attr_name,val);
+        write_func(elem,val);
 }
 
 void cf_element_push(cf_element* elem,void* data){

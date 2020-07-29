@@ -21,7 +21,7 @@ typedef struct cf_element_class{
 cf_element_class* cf_element_class_create(const char* class_name){
     cf_element_class* e_class = cf_allocator_simple_alloc(sizeof(cf_element_class));
     e_class->name = cf_string_create_from_cstr(class_name);
-    e_class->attr_map = cf_hash_create(cf_hash_str,cf_hash_str_equal,cf_allocator_simple_free,cf_allocator_simple_free);
+    e_class->attr_map = cf_hash_create(cf_hash_str_hash,cf_hash_str_equal,cf_allocator_simple_free,NULL);
 }
 void cf_element_class_set_constructor(cf_element_class* elem_class,cf_element_constructor constructor){
     elem_class->constructor = constructor;
@@ -51,22 +51,22 @@ cf_element* cf_element_class_create_element(cf_element_class* elem_class,const c
 void cf_element_class_register_attr(cf_element_class* elem_class,const char* attr_name,cf_element_attr_write_method attr_write,cf_element_attr_read_method attr_read){
     char* str = cf_allocator_simple_alloc(strlen(attr_name+1));
     strcpy(str,attr_name);
-    void* attr_func_arr = cf_allocator_simple_alloc(2*sizeof(attr_write));
-    attr_func_arr[0] = attr_write;
-    attr_func_arr[1] = attr_read;
+    void** attr_func_arr = cf_allocator_simple_alloc(2*sizeof(attr_write));
+    attr_func_arr[0] = (void*)attr_write;
+    attr_func_arr[1] = (void*)attr_read;
     cf_hash_insert(elem_class->attr_map,str,attr_func_arr);
 }
 cf_element_attr_read_method cf_element_class_get_attr_read_method(cf_element_class* elem_class,const char* attr_name){
-    void* arr = cf_hash_get(elem_class->attr_map,attr_name,NULL);
+    void** arr = cf_hash_get(elem_class->attr_map,(void*)attr_name,NULL);
     if(arr != NULL) 
-        return arr[1];
+        return (cf_element_attr_read_method)arr[1];
     else
         return NULL;
 }
 cf_element_attr_write_method cf_element_class_get_attr_write_method(cf_element_class* elem_class,const char* attr_name){
-    void* arr = cf_hash_get(elem_class->attr_map,attr_name,NULL);
+    void** arr = cf_hash_get(elem_class->attr_map,(void*)attr_name,NULL);
     if(arr != NULL) 
-        return arr[0];
+        return (cf_element_attr_write_method)arr[0];
     else
         return NULL;
 }

@@ -1,5 +1,5 @@
 #include "cf_element.h"
-typedef void(*cf_element_constructor)(cf_element*);
+typedef int (*cf_element_constructor)(cf_element*);
 typedef void(*cf_element_deconstructor)(cf_element*);
 typedef void(*cf_element_start_method)(cf_element*);
 typedef void* (*cf_element_processer)(cf_element*,void*);
