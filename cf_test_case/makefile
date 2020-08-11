@@ -6,11 +6,13 @@ C_FLAGS=
 src=  $(CFWK_DIR)/cf_test/cf_test.c \
 	  $(CFWK_DIR)/cf_allocator/cf_allocator_simple.c \
 	  $(CFWK_DIR)/cf_collection/cf_list.c \
+	  $(CFWK_DIR)/cf_collection/cf_hash.c \
 	  $(CFWK_DIR)/cf_collection/cf_string.c \
 	  $(CFWK_DIR)/cf_collection/cf_iterator.c \
 	  $(CFWK_DIR)/cf_module/cf_module.c \
 	  $(CFWK_DIR)/cf_factory/cf_factory.c \
 	  $(CFWK_DIR)/cf_factory/cf_element.c \
+	  $(CFWK_DIR)/cf_factory/cf_pad.c \
 	  $(CFWK_DIR)/cf_factory/cf_element_class.c \
 	  $(CFWK_DIR)/cf_test_case/cf_list_test.c \
 	  $(CFWK_DIR)/cf_test_case/cf_module_test.c \
