@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 2.8.9)
+project(cFWK)
+set(CMAKE_BUILD_TYPE Debug)
+include_directories(.)
+if( DEFINED ENV{CROSS_FILE})
+    include($ENV{CROSS_FILE})
+endif()
+set(SOURCES cf_allocator/cf_allocator_simple.c )
+add_library(cFWK STATIC ${SOURCES})
+ADD_EXECUTABLE( ${DIR_SRCS}  )
+
