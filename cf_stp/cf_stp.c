@@ -461,7 +461,6 @@ int cf_stp_server_run(struct cf_stp_server* server){
                 if(cli_sock > max_fd)
                     max_fd = cli_sock;
             }
-
         }
         for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter))
         {
@@ -547,8 +546,6 @@ int cf_stp_server_run(struct cf_stp_server* server){
                     {
                         ssize_t size = fwrite((uint8_t*)cf_vector_buffer(byte_vector)+4,1,byte_len,context->m_fd);
                         printf("write file %d bytes\n",(int)size);
-
-
                     }
                         
                     context->m_file_offset += byte_len;

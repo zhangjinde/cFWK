@@ -1,8 +1,15 @@
 #include "cf_websocket_test.h"
 #include "cf_websocket/cf_websocket_server.h"
+
+static void on_new_websocket(cf_websocket_server* server,cf_websocket* new_cli){
+    
+}
+static void on_cli_read(cf_websocket* new_cli){
+    
+}
 void test_websocket_case(cf_test* tc){
     cf_websocket_server* server = cf_websocket_server_create(8953);
-    cf_websocket_server_run(server);
+    cf_websocket_server_run(server,on_new_websocket,on_cli_read);
     return;
 }
 cf_suite* get_websocket_test_suite(){
