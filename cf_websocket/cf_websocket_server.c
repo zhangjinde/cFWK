@@ -16,8 +16,8 @@ cf_websocket_server* cf_websocket_server_create(uint16_t port){
 static void on_new_socket(cf_socket* server,cf_socket* new_cli){
 }
 static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
-    printf("size=%d\n",len);
-    printf("data - %s\n",(char*)buffer);
+    printf("size=%lu\n",len);
+    printf("data - \n%s\n",(char*)buffer);
 }
 
 int cf_websocket_server_run(cf_websocket_server* server,void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* ),
