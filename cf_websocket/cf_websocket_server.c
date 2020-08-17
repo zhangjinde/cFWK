@@ -47,7 +47,7 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
                             strcmp(cf_http_request_upgrade(request),"websocket") == 0 ){
                                 char accept_key[128];
                                 memset(accept_key,0,sizeof(accept_key));
-                                const char* key = cf_http_request_upgrade();
+                                const char* key = cf_http_request_ws_key(request);
                                 memcpy(accept_key,key,strlen(key));
                                 strncat(accept_key,key,strlen(accept_key)+1);
 
@@ -56,7 +56,7 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
 
 
         }
-        printf("size=%d\n",len);
+        printf("size=%lu\n",len);
         printf("data - %s\n",(char*)buffer);
     }
 }
