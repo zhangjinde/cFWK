@@ -8,7 +8,7 @@ static void on_cli_read(cf_websocket* new_cli){
     
 }
 void test_websocket_case(cf_test* tc){
-    cf_websocket_server* server = cf_websocket_server_create(8953);
+    cf_websocket_server* server = cf_websocket_server_create(8800);
     cf_websocket_server_run(server,on_new_websocket,on_cli_read);
     return;
 }

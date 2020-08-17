@@ -56,11 +56,9 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
 
 
         }
-        
         printf("size=%d\n",len);
         printf("data - %s\n",(char*)buffer);
     }
-
 }
 
 int cf_websocket_server_run(cf_websocket_server* server,void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* ),
