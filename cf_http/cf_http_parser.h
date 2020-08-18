@@ -11,6 +11,7 @@ const char* cf_http_request_method(cf_http_request* request);
 
 const char* cf_http_request_upgrade(cf_http_request* request);
 const char* cf_http_request_ws_key(cf_http_request* request);
-
+const char* cf_http_request_host(cf_http_request* request);
+const char* cf_http_request_resource(cf_http_request* request);
 
 #endif//CF_HTTP_PARSER_H

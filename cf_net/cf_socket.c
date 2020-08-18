@@ -23,6 +23,9 @@ int cf_socket_server_run(cf_socket* sock,void (*on_new_socket)(cf_socket* ,cf_so
     sock->on_client_read = on_client_read;
     return sock->inf->run(sock);
 }
+int cf_socket_write(cf_socket* sock,uint8_t* buf,size_t n){
+    return sock->inf->write(sock,buf,n);
+}
 void cf_socket_set_user_data(cf_socket* sock,void* user_data){
     sock->user_data = user_data;
 }

@@ -1,11 +1,12 @@
 #include "cf_websocket_test.h"
 #include "cf_websocket/cf_websocket_server.h"
-
+#include <stddef.h>
+#include <stdio.h>
 static void on_new_websocket(cf_websocket_server* server,cf_websocket* new_cli){
     
 }
-static void on_cli_read(cf_websocket* new_cli){
-    
+static void on_cli_read(cf_websocket* new_cli,const uint8_t* buf,size_t n){
+    printf("data=%s\n",buf);
 }
 void test_websocket_case(cf_test* tc){
     cf_websocket_server* server = cf_websocket_server_create(8800);

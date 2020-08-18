@@ -3,7 +3,7 @@
 
 typedef struct cf_socket_inf {
     int (*run)(cf_socket* );
-    //cf_socket* (*pending_connection)(cf_socket* );
+    int (*write)(cf_socket* ,uint8_t* ,size_t );
 }cf_socket_inf;
 typedef struct cf_socket {
     const cf_socket_inf* inf;

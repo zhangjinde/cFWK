@@ -7,6 +7,8 @@ typedef struct cf_http_request{
     cf_string* method;
     cf_string* upgrade;
     cf_string* ws_key;
+    cf_string* host;
+    cf_string* resource;
 }cf_http_request;
 static const char* take_line(const char* text,size_t text_len,char* line,size_t line_len,size_t* take_len){
     size_t pos = 0;
@@ -23,11 +25,12 @@ static const char* take_line(const char* text,size_t text_len,char* line,size_t 
 
 cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_len){
     // char text_buffer[2048];
-    // *parsed_len = 0;
+    // 
     // if(len > sizeof(text_buffer)){
     //     printf("http request text is too length.\n");
     //     return NULL;
     // }
+    *parsed_len = 0;
     uint8_t str_buffer[2048];
     size_t str_buff_pos = 0;
     char line[1024];
@@ -40,12 +43,19 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
     size_t pos = 0;
     char* upgrade = NULL;
     char* ws_key = NULL;
+    char* host = NULL;
     char* method = str_buffer + str_buff_pos;
     while(line[pos++] != ' ');
+    str_buff_pos += pos;
     memcpy(method,line,pos-1);
     method[pos-1] = '\0';
-    str_buff_pos += pos;
-    
+    char* resource = str_buffer + str_buff_pos;
+    char* s = line+pos;
+    while(line[pos++] != ' ');
+    memcpy(resource,s,pos-(s-line)-1);
+    resource[pos-(s-line)-1] = '\0';
+    str_buff_pos += strlen(resource)+1;
+
     while(*text != '\r'){
         pos = 0;
         text = take_line(text,len-(text-buffer),line,sizeof(line),&take_len);
@@ -70,12 +80,21 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
             strcpy(ws_key,val);
             str_buff_pos += strlen(ws_key)+1;
         }
+        else if(0 == strcmp(key , "Host")){
+            host = str_buffer + str_buff_pos;
+            strcpy(host,val);
+            str_buff_pos += strlen(host)+1;
+        }
 
     }
+    while( text - buffer < len &&  *text++ != '\n');
+    *parsed_len = text - buffer;
     cf_http_request* request = cf_allocator_simple_alloc(sizeof(cf_http_request));
     request->method = cf_string_create_from_cstr(method);
     request->upgrade = cf_string_create_from_cstr(upgrade);
     request->ws_key = cf_string_create_from_cstr(ws_key);
+    request->host = cf_string_create_from_cstr(host);
+    request->resource = cf_string_create_from_cstr(resource);
     return request;
 }
 
@@ -99,4 +118,11 @@ const char* cf_http_request_upgrade(cf_http_request* request){
 }
 const char* cf_http_request_ws_key(cf_http_request* request){
     return cf_string_c_str(request->ws_key);
+}
+
+const char* cf_http_request_host(cf_http_request* request){
+    return cf_string_c_str(request->host);
+}
+const char* cf_http_request_resource(cf_http_request* request){
+    return cf_string_c_str(request->resource);
 }

@@ -11,6 +11,13 @@
 #include <stdio.h>
 #define SOCKET_BUFFER_SIZE (1024*128)
 
+static int socket_run(cf_socket* cf_sock_server);
+static int socket_write(cf_socket* sock,uint8_t* buf,size_t n);
+static const cf_socket_inf sock_inf = {
+    .run = socket_run,
+    .write = socket_write
+};
+
 static int socket_run(cf_socket* cf_sock_server){
     int sock = (int)(uint64_t)cf_sock_server->instance;
     struct cf_list* cli_list = cf_list_create(NULL);
@@ -32,6 +39,7 @@ static int socket_run(cf_socket* cf_sock_server){
             if(cf_sock_server->on_new_socket){
                 cf_sock_cli = cf_allocator_simple_alloc(sizeof(cf_socket));
                 cf_sock_cli->instance = (void*)(uint64_t)sock_cli;
+                cf_sock_cli->inf = &sock_inf;
                 cf_sock_server->on_new_socket(cf_sock_server,cf_sock_cli);
                 cf_list_push(cli_list,(void*)cf_sock_cli);
                 if(sock_cli > max_fd)
@@ -72,11 +80,12 @@ static int socket_run(cf_socket* cf_sock_server){
 //         max_fd = sock_cli;
 
 // }
-static const cf_socket_inf sock_inf = {
-    .run = socket_run
-};
+static int socket_write(cf_socket* sock,uint8_t* buf,size_t n){
+    write((int)(uint64_t)sock->instance,buf,n);
+}
+
 cf_socket* cf_tcp_socket_create_linux(uint16_t port){
-    cf_socket* priv = (cf_socket*)cf_allocator_simple_alloc(sizeof(cf_socket));
+    cf_socket* cf_sock = (cf_socket*)cf_allocator_simple_alloc(sizeof(cf_socket));
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if(sock == -1)
         goto end1;
@@ -92,12 +101,12 @@ cf_socket* cf_tcp_socket_create_linux(uint16_t port){
     if(ret == -1)
         goto end2;
     listen(sock, 10);
-    priv->instance = (void*)(uint64_t)sock;
-    priv->inf = &sock_inf;
-    return priv;
+    cf_sock->instance = (void*)(uint64_t)sock;
+    cf_sock->inf = &sock_inf;
+    return cf_sock;
 end2:
     close(sock);
 end1:
-    cf_allocator_simple_free(priv);
+    cf_allocator_simple_free(cf_sock);
     return NULL;
 }
