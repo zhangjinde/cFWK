@@ -3,7 +3,8 @@
 #include "cf_net/cf_socket.h"
 #include "cf_websocket_server.h"
 #include "cf_http/cf_http_parser.h"
-#include "string.h"
+#include "cf_util/cf_util.h"
+#include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #define CF_WEBSOCKET_RECV_BUFF_LEN  1024
@@ -38,8 +39,10 @@ static void on_new_socket(cf_socket* server,cf_socket* new_cli){
     return;
 }
 static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
+    
     cf_websocket* ws_sock = cf_socket_get_user_data(client);
     if(ws_sock->state == INIT){
+        printf("%s\n",buffer);
         if(ws_sock->recv_len == 0){
             size_t parsed_len = 0;
             cf_http_request* request = cf_http_parse(buffer,len,&parsed_len);
@@ -49,9 +52,13 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
                                 memset(accept_key,0,sizeof(accept_key));
                                 const char* key = cf_http_request_ws_key(request);
                                 memcpy(accept_key,key,strlen(key));
-                                strncat(accept_key,key,strlen(accept_key)+1);
+                                strncat(accept_key,"258EAFA5-E914-47DA-95CA-C5AB0DC85B11",strlen("258EAFA5-E914-47DA-95CA-C5AB0DC85B11")+1);
+                                uint8_t sha1[20];
+                                cf_sha1_generate(accept_key,sha1,strlen(accept_key));
+                                uint8_t sha1_base64[64];
+                                cf_base64_encode(sha1,sha1_base64,sizeof(sha1_base64));
 
-                
+                                printf("accept_key=%s\n",sha1_base64);
             }
 
 

@@ -284,7 +284,7 @@ void cf_suite_run(cf_suite* suite){
     _cf_suite_statistical(suite);
 }
 
-void cf_assert(cf_test* tc,const char* file,int line,const char* msg,bool cond){
+void cf_assert_common(cf_test* tc,const char* file,int line,const char* msg,bool cond){
     if(cond)    return;
     tc->failed = true;
     if(tc->msg){

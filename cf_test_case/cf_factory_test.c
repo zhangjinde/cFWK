@@ -2,7 +2,7 @@
 #include "cf_module/cf_module.h"
 #include "cf_factory/cf_factory.h"
 #include <stdio.h>
-void test_factory_case(cf_test* tc){
+static void test_factory_case(cf_test* tc){
     cf_mod_setup();
     cf_factory* factory = cf_find_factory("test_factory");
     CF_ASSERT(tc,NULL,factory != NULL);

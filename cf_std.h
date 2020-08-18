@@ -1,6 +1,9 @@
 #ifndef CF_STD_H
 #define CF_STD_H
 #define cf_unused(expr) do { (void)(expr); } while (0)
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 #include <stdint.h>
 #include <assert.h>
 

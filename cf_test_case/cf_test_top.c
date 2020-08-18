@@ -5,6 +5,7 @@
 #include "cf_list_test.h"
 #include "cf_factory_test.h"
 #include "cf_sha1_test.h"
+#include "cf_base64_test.h"
 #include "cf_websocket_test.h"
 
 int main(){
@@ -13,6 +14,7 @@ int main(){
     cf_suite_add_suite(suite,get_list_test_suite());
     cf_suite_add_suite(suite,get_factory_test_suite());
     cf_suite_add_suite(suite,get_sha1_test_suite());
+    cf_suite_add_suite(suite,get_base64_test_suite());
     cf_suite_add_suite(suite,get_websocket_test_suite());
     cf_suite_run(suite);
     printf("%s",cf_suite_msg(suite));
