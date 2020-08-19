@@ -154,19 +154,19 @@ static struct cf_json* create_objects(void)
     cf_json_add_number_to_object(fmt, "frame rate", 24);
 
     /* Print to text */
-    if (print_preallocated(root) != 0) {
-        cf_json_destroy_object(root);
-        exit(EXIT_FAILURE);
-    }
+    // if (print_preallocated(root) != 0) {
+    //     cf_json_destroy_object(root);
+    //     exit(EXIT_FAILURE);
+    // }
     cf_json_destroy_object(root);
 
     /* Our "days of the week" array: */
     root = cf_json_create_string_array(strings, 7);
 
-    if (print_preallocated(root) != 0) {
-        cf_json_destroy_object(root);
-        exit(EXIT_FAILURE);
-    }
+    // if (print_preallocated(root) != 0) {
+    //     cf_json_destroy_object(root);
+    //     exit(EXIT_FAILURE);
+    // }
     cf_json_destroy_object(root);
 
     /* Our matrix: */
@@ -178,10 +178,10 @@ static struct cf_json* create_objects(void)
 
     /* cJSON_ReplaceItemInArray(root, 1, cJSON_CreateString("Replacement")); */
 
-    if (print_preallocated(root) != 0) {
-        cf_json_destroy_object(root);
-        exit(EXIT_FAILURE);
-    }
+    // if (print_preallocated(root) != 0) {
+    //     cf_json_destroy_object(root);
+    //     exit(EXIT_FAILURE);
+    // }
     cf_json_destroy_object(root);
 
     /* Our "gallery" item: */
@@ -196,10 +196,10 @@ static struct cf_json* create_objects(void)
     cf_json_add_string_to_object(thm, "Width", "100");
     cf_json_add_item_to_object(img, "IDs", cf_json_create_int_array(ids, 4));
 
-    if (print_preallocated(root) != 0) {
-        cf_json_destroy_object(root);
-        exit(EXIT_FAILURE);
-    }
+    // if (print_preallocated(root) != 0) {
+    //     cf_json_destroy_object(root);
+    //     exit(EXIT_FAILURE);
+    // }
     cf_json_destroy_object(root);
 
     /* Our array of "records": */
@@ -219,19 +219,19 @@ static struct cf_json* create_objects(void)
 
     /* cJSON_ReplaceItemInObject(cJSON_GetArrayItem(root, 1), "City", cJSON_CreateIntArray(ids, 4)); */
 
-    if (print_preallocated(root) != 0) {
-        cf_json_destroy_object(root);
-        exit(EXIT_FAILURE);
-    }
+    //if (print_preallocated(root) != 0) {
+    //     cf_json_destroy_object(root);
+    //     exit(EXIT_FAILURE);
+    // }
     cf_json_destroy_object(root);
 
     root = cf_json_create_object();
     cf_json_add_number_to_object(root, "number", 1.0 / zero);
 
-    if (print_preallocated(root) != 0) {
-        cf_json_destroy_object(root);
-        exit(EXIT_FAILURE);
-    }
+    // if (print_preallocated(root) != 0) {
+    //     cf_json_destroy_object(root);
+    //     exit(EXIT_FAILURE);
+    // }
     
     return root;
 }
@@ -244,21 +244,21 @@ static void json_test_case(cf_test* tc){
 
     cf_json_add_number_to_object(json,"test_num1",123);
     CF_ASSERT(tc,NULL,cf_json_get_int(json,"test_num1",NULL) == 123);
-    printf("test_num1=%d\n",cf_json_get_int(json,"test_num1",NULL));
+    //printf("test_num1=%d\n",cf_json_get_int(json,"test_num1",NULL));
 
     cf_json_add_number_to_object(json,"test_num2",222);
     item = cf_json_get_item(json,"test_num2"); 
     CF_ASSERT(tc,NULL,cf_json_to_int(item) == 222);
-    printf("test_num2=%d\n",cf_json_to_int(item));
+    //printf("test_num2=%d\n",cf_json_to_int(item));
     
     cf_json_add_string_to_object(json,"test_str1","hi");
     CF_ASSERT_STR_EQUALS(tc,NULL,"hi",cf_json_get_string(json,"test_str1",NULL));
-    printf("test_str1=%s\n",cf_json_get_string(json,"test_str1",NULL));
+    //prntf("test_str1=%s\n",cf_json_get_string(json,"test_str1",NULL));
 
     cf_json_add_string_to_object(json,"test_str2","hello");
     item = cf_json_get_item(json, "test_str2");
     CF_ASSERT_STR_EQUALS(tc,NULL,"hello",cf_json_get_string(json,"test_str2",NULL));
-    printf("test_str2=%s\n",cf_json_to_string(item));
+    //printf("test_str2=%s\n",cf_json_to_string(item));
 
     CF_ASSERT(tc,"root has test_str2",cf_json_contains(json,"test_str2"));
     cf_json_destroy_object(json);

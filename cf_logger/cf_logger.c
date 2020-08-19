@@ -5,7 +5,7 @@
 #include "cf_collection/cf_list.h"
 #include "cf_allocator/cf_allocator_simple.h"
 #include <pthread.h>
-#define LOG_LINE_SZ    1024
+#define LOG_LINE_SZ    (1024*128)
 
 typedef struct cf_logger{
     cf_log_level m_level;

@@ -4,7 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 static void on_new_websocket(cf_websocket_server* server,cf_websocket* new_cli){
-    
+    printf("connect new cli[%p]\n",new_cli);
+}
+static void on_disconnect(cf_websocket_server* server,cf_websocket* cli){
+    printf("disconnect cli[%p]\n",cli);
 }
 static void on_cli_read(cf_websocket* cli,const char* buf,uint64_t n){
     printf("data=%s\n",buf);
@@ -15,6 +18,7 @@ static void on_cli_read(cf_websocket* cli,const char* buf,uint64_t n){
 void test_websocket_case(cf_test* tc){
     cf_websocket_server* server = cf_websocket_server_create(8800);
     cf_websocket_server_set_on_connect_callback(server,on_new_websocket);
+    cf_websocket_server_set_on_disconnect_callback(server,on_disconnect);
     cf_websocket_server_set_on_read_text_callback(server,on_cli_read);
     cf_websocket_server_run(server);
 

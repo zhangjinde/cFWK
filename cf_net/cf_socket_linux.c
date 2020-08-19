@@ -2,13 +2,15 @@
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "cf_std.h"
+#include "cf_socket_internal.h"
 #include "cf_socket_linux.h"
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_collection/cf_list.h"
 
-#include "cf_socket_internal.h"
-#include <stdio.h>
 #define SOCKET_BUFFER_SIZE (1024*128)
 
 static int socket_run(cf_socket* cf_sock_server);
@@ -23,14 +25,18 @@ static int socket_run(cf_socket* cf_sock_server){
     struct cf_list* cli_list = cf_list_create(NULL);
     int max_fd = sock;
     while(true){
-        fd_set r_set;
+        fd_set r_set,except_set;
         FD_ZERO(&r_set);
+        FD_ZERO(&except_set);
         FD_SET(sock,&r_set);
+        FD_SET(sock,&except_set);
         for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
             int sock_cli = (int)(uintptr_t)((cf_socket*)cf_iterator_get(&iter))->instance;
             FD_SET(sock_cli,&r_set);
+            FD_SET(sock_cli,&except_set);
         }
-        int nready = select(max_fd+1,&r_set,NULL,NULL,NULL);
+        //memcpy(&except_set,&r_set,sizeof(r_set));
+        int nready = select(max_fd+1,&r_set,NULL,&except_set,NULL);
         if(FD_ISSET(sock,&r_set))
         {
             nready--;
@@ -60,11 +66,23 @@ static int socket_run(cf_socket* cf_sock_server){
                 if(count <= 0)
                 {
                     close(sock_cli);
+                    if(cf_sock_server->on_disconnect){
+                        cf_sock_server->on_disconnect(cf_sock_server,cf_sock_cli);
+                    }
                     cf_iterator_remove(&iter);
+                    cf_allocator_simple_free(cf_sock_cli);
                     continue;
                 }
                 if(cf_sock_server->on_client_read)
                     cf_sock_server->on_client_read(cf_sock_cli,buffer,count);
+            }
+            if(FD_ISSET(sock_cli,&except_set)){
+                close(sock_cli);
+                if(cf_sock_server->on_disconnect){
+                    cf_sock_server->on_disconnect(cf_sock_server,cf_sock_cli);
+                }
+                cf_iterator_remove(&iter);
+                cf_allocator_simple_free(cf_sock_cli);
             }
         }
     }

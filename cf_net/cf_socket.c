@@ -17,11 +17,17 @@ cf_socket* cf_tcp_socket_create(uint16_t port){
     
 }
 
-int cf_socket_server_run(cf_socket* sock,void (*on_new_socket)(cf_socket* ,cf_socket*),
-                void (*on_client_read)(cf_socket* ,uint8_t*,size_t len)){
-    sock->on_new_socket = on_new_socket;
-    sock->on_client_read = on_client_read;
+int cf_socket_server_run(cf_socket* sock){
     return sock->inf->run(sock);
+}
+void cf_socket_set_on_connect_callback(cf_socket* sock,void (*on_new_socket)(cf_socket* ,cf_socket*)){
+    sock->on_new_socket = on_new_socket;
+}
+void cf_socket_set_on_disconnect_callback(cf_socket* sock,void (*on_disconnect)(cf_socket* ,cf_socket*)){
+    sock->on_disconnect = on_disconnect;
+}
+void cf_socket_set_on_read_callback(cf_socket* sock,void (*on_cli_read)(cf_socket* ,const uint8_t*,size_t len)){
+    sock->on_client_read = on_cli_read;
 }
 int cf_socket_write(cf_socket* sock,const uint8_t* buf,size_t n){
     return sock->inf->write(sock,buf,n);

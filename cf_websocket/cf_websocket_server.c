@@ -7,11 +7,13 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "cf_util/cf_util.h"
 #define CF_WEBSOCKET_RECV_BUFF_LEN  1024
 typedef struct cf_websocket_server {
     cf_socket* sock;
     void* data;
     void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* );
+    void (*on_disconnect)(cf_websocket_server* ,cf_websocket* );
     void (*on_read_text)(cf_websocket* ,const char* buf,uint64_t n);
     void (*on_read_binary)(cf_websocket* ,const uint8_t* buf,uint64_t n);
 }cf_websocket_server;
@@ -45,15 +47,23 @@ static void on_new_socket(cf_socket* server,cf_socket* new_cli){
     cf_socket_set_user_data(new_cli,websock);
     return;
 }
-char *wb_accept = "HTTP/1.1 101 Switching Protocols\r\n" \
+static void on_disconnect(cf_socket* server,cf_socket* cli){
+    cf_websocket_server* ws_server = cf_socket_get_user_data(server);
+    cf_websocket* websock = cf_socket_get_user_data(cli);
+    
+    if(ws_server->on_disconnect)
+        ws_server->on_disconnect(ws_server,websock);
+    cf_allocator_simple_free(websock);
+    return;
+}
+static const char *wb_accept = "HTTP/1.1 101 Switching Protocols\r\n" \
 				  "Upgrade:websocket\r\n" \
 				  "Connection: Upgrade\r\n" \
 				  "Sec-WebSocket-Accept: %s\r\n" \
 				  "WebSocket-Location: ws://%s%s\r\n" \
 				  "WebSocket-Protocol:chat\r\n\r\n";
 
-static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
-    
+static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
     cf_websocket* ws_sock = cf_socket_get_user_data(client);
     if(ws_sock->state == INIT){
         if(ws_sock->recv_len == 0){
@@ -112,12 +122,20 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
             ws_sock->server->on_read_text(ws_sock,data,data_len);
         else if(code == 2 && ws_sock->server->on_read_binary)
             ws_sock->server->on_read_binary(ws_sock,data,data_len);
+        else if(code == 8)//客户端请求断开连接
+        {
+            uint8_t close_buf[2] = {0x88,0x00};
+            cf_socket_write(ws_sock->sock,close_buf,sizeof(close_buf));
+        }
 
     }
 }
 
 int cf_websocket_server_run(cf_websocket_server* server){
-    cf_socket_server_run(server->sock,on_new_socket,on_client_read);
+    cf_socket_set_on_connect_callback(server->sock,on_new_socket);
+    cf_socket_set_on_disconnect_callback(server->sock,on_disconnect);
+    cf_socket_set_on_read_callback(server->sock,on_client_read);
+    cf_socket_server_run(server->sock);
     return CF_OK;
 }
 static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_t code){
@@ -166,6 +184,10 @@ void cf_websocket_server_set_on_read_binary_callback(cf_websocket_server* server
 void cf_websocket_server_set_on_connect_callback(cf_websocket_server* server,void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* )){
     server->on_new_websocket = on_new_websocket;
 }
+void cf_websocket_server_set_on_disconnect_callback(cf_websocket_server* server,void (*on_disconnect)(cf_websocket_server* ,cf_websocket* )){
+    server->on_disconnect = on_disconnect;
+}
+
 
 void cf_websocket_server_set_user_data(cf_websocket_server* server,void* d){
     server->data = d;
