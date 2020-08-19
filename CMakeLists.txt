@@ -4,10 +4,28 @@ set(CMAKE_BUILD_TYPE Debug)
 #message($ENV{CXXFLAGS})
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")  
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")  
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
+#SET(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -lpthread")
+#SET(CMAKE_STATIC_LINKER_FLAGS_DEBUG "${CMAKE_STATIC_LINKER_FLAGS}")  
+#SET(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS}")  
 include_directories(.)
 if( DEFINED ENV{CROSS_FILE})
     include($ENV{CROSS_FILE})
 endif()
+file(GLOB tmp_SRCS "cf_json/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
+file(GLOB tmp_SRCS "cf_lock/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
+file(GLOB tmp_SRCS "cf_json/cJSON/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
+file(GLOB tmp_SRCS "cf_async_queue/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
+file(GLOB tmp_SRCS "cf_logger/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
+file(GLOB tmp_SRCS "cf_threadpool/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
+file(GLOB tmp_SRCS "cf_iostream/*.c")
+list(APPEND cFWK_SRCS ${tmp_SRCS})
 file(GLOB tmp_SRCS "cf_allocator/*.c")
 list(APPEND cFWK_SRCS ${tmp_SRCS})
 file(GLOB tmp_SRCS "cf_test/*.c")
@@ -29,6 +47,14 @@ list(APPEND cFWK_SRCS ${tmp_SRCS})
 message(${cFWK_SRCS})
 #set(cFWK_SRCS cf_allocator/cf_allocator_simple.c )
 add_library(cFWK STATIC ${cFWK_SRCS})
+set_target_properties(
+    cFWK
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/out/lib
+    )
+#set_target_properties(
+#    cFWK
+#    PROPERTIES STATIC_LINKER_FLAGS -lm
+#    )
 
 file(GLOB test_SRCS "cf_test_case/*.c") 
 ADD_EXECUTABLE(test_top ${test_SRCS}  )
@@ -36,21 +62,43 @@ ADD_EXECUTABLE(test_top ${test_SRCS}  )
 #message(${CMAKE_CURRENT_BINARY_DIR})
 #message(${PROJECT_BINARY_DIR})
 set_target_properties(
-    cFWK
-    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/out/lib
-    )
-set_target_properties(
     test_top
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/out/bin
     )
 
+set_target_properties(
+    test_top
+    PROPERTIES EXE_LINKER_FLAGS -lm
+    )
 
 target_link_libraries(test_top cFWK)
 install (TARGETS cFWK DESTINATION ${PROJECT_BINARY_DIR}/install/lib)
 install (TARGETS test_top DESTINATION ${PROJECT_BINARY_DIR}/install/bin)
 
 
+install (FILES  cf_std.h DESTINATION ${PROJECT_BINARY_DIR}/install/include/ )
 file(GLOB tmp_INCS "cf_allocator/*.h")
 list(APPEND cFWK_INCS ${tmp_INCS})
 install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_allocator/ )
+file(GLOB tmp_INCS "cf_logger/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_logger/ )
+file(GLOB tmp_INCS "cf_iostream/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_iostream/ )
+file(GLOB tmp_INCS "cf_websocket/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_websocket/ )
+file(GLOB tmp_INCS "cf_threadpool/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_threadpool/ )
+file(GLOB tmp_INCS "cf_collection/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_collection/ )
+file(GLOB tmp_INCS "cf_json/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_json/ )
+file(GLOB tmp_INCS "cf_lock/*.h")
+list(APPEND cFWK_INCS ${tmp_INCS})
+install (FILES  ${tmp_INCS} DESTINATION ${PROJECT_BINARY_DIR}/install/include/cf_lock/ )
 

@@ -10,8 +10,10 @@
 #define CF_WEBSOCKET_RECV_BUFF_LEN  1024
 typedef struct cf_websocket_server {
     cf_socket* sock;
+    void* data;
     void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* );
-    void (*on_read)(cf_websocket* ,const uint8_t* buf,size_t n);
+    void (*on_read_text)(cf_websocket* ,const char* buf,uint64_t n);
+    void (*on_read_binary)(cf_websocket* ,const uint8_t* buf,uint64_t n);
 }cf_websocket_server;
 typedef enum cf_sock_state{
     INIT = 0,
@@ -20,6 +22,7 @@ typedef enum cf_sock_state{
 typedef struct cf_websocket {
     cf_sock_state state;
     cf_websocket_server* server;
+    void* data;
     cf_socket* sock;
     uint8_t recv_buffer[CF_WEBSOCKET_RECV_BUFF_LEN];
     uint32_t recv_len;
@@ -63,8 +66,9 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
                                 const char* key = cf_http_request_ws_key(request);
                                 memcpy(accept_key,key,strlen(key));
                                 strncat(accept_key,"258EAFA5-E914-47DA-95CA-C5AB0DC85B11",strlen("258EAFA5-E914-47DA-95CA-C5AB0DC85B11")+1);
-                                uint8_t sha1[20];
+                                uint8_t sha1[21];
                                 cf_sha1_generate(accept_key,sha1,strlen(accept_key));
+                                sha1[20] = '\0';
                                 uint8_t sha1_base64[64];
                                 cf_base64_encode(sha1,sha1_base64,sizeof(sha1_base64));
                                 char accept_buffer[256];
@@ -75,6 +79,7 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
         }
     }
     else{
+        uint8_t code = buffer[0] & 0x0f;
         uint64_t data_len = buffer[1] & 0x7f;
         if(data_len == 126){
             data_len = buffer[3];
@@ -103,18 +108,75 @@ static void on_client_read(cf_socket* client,uint8_t* buffer,size_t len){
             data[i] = buffer[i] ^ mask_key[i%4];
         }
         data[data_len] = '\0';
-        if(ws_sock->server->on_read)
-            ws_sock->server->on_read(ws_sock,data,data_len);
+        if(code == 1 && ws_sock->server->on_read_text)
+            ws_sock->server->on_read_text(ws_sock,data,data_len);
+        else if(code == 2 && ws_sock->server->on_read_binary)
+            ws_sock->server->on_read_binary(ws_sock,data,data_len);
 
     }
-    
-
 }
 
-int cf_websocket_server_run(cf_websocket_server* server,void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* ),
-    void (*on_cli_read)(cf_websocket* ,const uint8_t*,size_t)){
-    server->on_new_websocket = on_new_websocket;
-    server->on_read = on_cli_read;
+int cf_websocket_server_run(cf_websocket_server* server){
     cf_socket_server_run(server->sock,on_new_socket,on_client_read);
     return CF_OK;
+}
+static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_t code){
+    uint8_t buffer[1024*1024];
+    buffer[0] = 0x80 | code;
+    uint8_t* payload = NULL;
+    if(n < 126){
+        buffer[1] = n;
+        payload = buffer + 2;
+    }
+        
+    else if(n <= 0xFFFF){
+        buffer[1] = 126;
+        buffer[2] = n >> 8;
+        buffer[3] = n & 0xff;
+        payload = buffer + 4;
+    }
+        
+    else{
+        buffer[1] = 127;
+        buffer[2] = (n >> 56) & 0xff;
+        buffer[3] = (n >> 48) & 0xff;
+        buffer[4] = (n >> 40) & 0xff;
+        buffer[5] = (n >> 32) & 0xff;
+        buffer[6] = (n >> 24) & 0xff;
+        buffer[7] = (n >> 16) & 0xff ;
+        buffer[8] = (n >> 8) & 0xff;
+        buffer[9] = n & 0xff;
+        payload = buffer + 10;
+    }
+    memcpy(payload,buf,n);
+    return cf_socket_write(ws->sock,buffer,n+payload-buffer); 
+}
+int cf_websocket_write_text(cf_websocket* ws,const char* buf,uint64_t n){
+    return cf_websocket_write(ws,buf,n,1);
+}
+int cf_websocket_write_binary(cf_websocket* ws,const uint8_t* buf,uint64_t n){
+    return cf_websocket_write(ws,buf,n,2);
+}
+void cf_websocket_server_set_on_read_text_callback(cf_websocket_server* server,void (*on_cli_read_text)(cf_websocket*,const char*,uint64_t )){
+    server->on_read_text = on_cli_read_text;
+}
+void cf_websocket_server_set_on_read_binary_callback(cf_websocket_server* server,void (*on_cli_read_binary)(cf_websocket*,const uint8_t*,uint64_t )){
+    server->on_read_binary = on_cli_read_binary;
+}
+void cf_websocket_server_set_on_connect_callback(cf_websocket_server* server,void (*on_new_websocket)(cf_websocket_server* ,cf_websocket* )){
+    server->on_new_websocket = on_new_websocket;
+}
+
+void cf_websocket_server_set_user_data(cf_websocket_server* server,void* d){
+    server->data = d;
+}
+void* cf_websocket_server_get_user_data(cf_websocket_server* server){
+    return server->data;
+}
+
+void cf_websocket_set_user_data(cf_websocket* ws,void* d){
+    ws->data = d;
+}
+void* cf_websocket_get_user_data(cf_websocket* ws){
+    return ws->data;
 }

@@ -1,144 +1,9 @@
-#include <stdbool.h>
-#include "cf_json.h"
-#include "cJSON/cJSON.h"
-
-struct cf_json{
-};
-
-struct cf_json* cf_json_load(const char* str)
-{
-    return (struct cf_json*)cJSON_Parse(str);
-}
-char* cf_json_print(const struct cf_json* item){
-    if(item == NULL )
-        return NULL;
-    return cJSON_Print((cJSON*)item);
-}
-int cf_json_print_preallocated(const struct cf_json* item,char *buffer, const int length, const bool format){
-    if(item == NULL)
-        return -1;
-    return cJSON_PrintPreallocated((cJSON*)item,buffer,length,format) == 0 ? -1 : 0;
-}
-struct cf_json* cf_json_create_object(){
-    return (struct cf_json*)cJSON_CreateObject();
-}
-struct cf_json* cf_json_clone(struct cf_json* json)
-{
-    return (struct cf_json *) cJSON_Duplicate( (cJSON *)json, true);
-}
-
-void cf_json_destroy_object(struct cf_json* item){
-    cJSON_Delete((cJSON*)item);
-}
-
-struct cf_json* cf_json_create_string(const char *string){
-    return  (struct cf_json*)cJSON_CreateString(string);
-}
-
-struct  cf_json* cf_json_create_array(){
-    return (struct  cf_json*)cJSON_CreateArray();
-}
-
-struct  cf_json* cf_json_create_string_array(const char *const *strings, int count){
-    return (struct  cf_json*)cJSON_CreateStringArray(strings,count);
-}
-
-struct cf_json* cf_json_create_int_array(const int *numbers, int count){
-    return  (struct cf_json*)cJSON_CreateIntArray(numbers,count);
-}
-
-int cf_json_add_item_to_array(struct  cf_json *array, struct  cf_json *item){
-    return cJSON_AddItemToArray((cJSON*)array,(cJSON*)item) == true ? 0 : -1;
-}
-
-int cf_json_add_item_to_object(struct  cf_json *object, const char *string, struct  cf_json *item){
-    if(object == NULL || item == NULL)
-        return -1;
-    return cJSON_AddItemToObject((cJSON*)object,string,(cJSON*)item) == 1 ? 0 : -1;
-}
-
-struct  cf_json* cf_json_add_string_to_object(struct  cf_json *object, const char * const name, const char * const string){
-    if(object == NULL )
-        return NULL;
-    return (struct  cf_json*)cJSON_AddStringToObject((cJSON*)object,name,string);
-}
-
-struct  cf_json* cf_json_add_number_to_object(struct cf_json *object, const char * const name, const double number){
-    if(object == NULL )
-        return NULL;
-    return (struct  cf_json*)cJSON_AddNumberToObject((cJSON*)object,name,number);
-}
-
-struct  cf_json* cf_json_add_int_to_object(struct cf_json *object, const char * const name,  int number){
-    return cf_json_add_number_to_object(object,name,number);
-}
-
-struct cf_json* cf_json_get_item(struct cf_json *object, const char * const name){
-    return (struct cf_json*)cJSON_GetObjectItem((cJSON*)object, name);
-}
-int cf_json_to_int(struct cf_json *object){
-    double num = cJSON_GetNumberValue((cJSON*)object);
-    return (int)num;
-}
-char* cf_json_to_string(struct cf_json *object){
-    char* str = cJSON_GetStringValue((cJSON*)object);
-    return str;
-}
-struct cf_json* cf_json_detach_item(struct cf_json* parent,const char* name){
-    return (struct cf_json*)cJSON_DetachItemFromObject((cJSON *)parent, name);
-}
-
-char* cf_json_get_string(struct cf_json *object, const char * const name,int* err){
-    char* str = NULL;
-    int _err = 0;
-    struct cf_json * item = cf_json_get_item(object, name);
-    if(item)
-    {
-        str = cf_json_to_string(item);
-    }
-    else
-    {
-        _err = -1;
-    }
-    if(err)
-        *err = _err;
-    return str;
-}
-int cf_json_get_int(struct cf_json *object, const char * const name,int* err){
-    int val = 0;
-    int _err = 0;
-    struct cf_json * item = cf_json_get_item(object, name);
-    if(item)
-        val = cf_json_to_int(item);
-    else
-    {
-        _err = -1;
-    }   
-    if(err)
-        *err = _err;
-    return val;
-}
-
-
-struct  cf_json* cf_json_add_false_to_object(struct cf_json *object, const char * const name){
-    if(object == NULL )
-        return NULL;
-    return (struct  cf_json*)cJSON_AddFalseToObject((cJSON*)object,name);
-}
-
-bool cf_json_contains(struct cf_json *object,const char* key){
-    return cJSON_HasObjectItem((struct cJSON*)object, key);
-}
-
-
-/**********************************************************************
- * gcc -g -DCF_JSON_TEST cf_json.c cJSON/cJSON.c -o cf_json_test
- * *********************************************************************/
-#ifdef CF_JSON_TEST
+#include "cf_json_test.h"
+#include "cf_allocator/cf_allocator_simple.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cf_json.h"
+#include "cf_json/cf_json.h"
 
 /* Used by some code below as an example datatype. */
 struct record
@@ -214,7 +79,6 @@ static int print_preallocated(struct cf_json *root)
         return -1;
     }
 
-    cf_allocator_simple_free(out);
     cf_allocator_simple_free(buf_fail);
     cf_allocator_simple_free(buf);
     return 0;
@@ -291,19 +155,19 @@ static struct cf_json* create_objects(void)
 
     /* Print to text */
     if (print_preallocated(root) != 0) {
-        cf_json_delete(root);
+        cf_json_destroy_object(root);
         exit(EXIT_FAILURE);
     }
-    cf_json_delete(root);
+    cf_json_destroy_object(root);
 
     /* Our "days of the week" array: */
     root = cf_json_create_string_array(strings, 7);
 
     if (print_preallocated(root) != 0) {
-        cf_json_delete(root);
+        cf_json_destroy_object(root);
         exit(EXIT_FAILURE);
     }
-    cf_json_delete(root);
+    cf_json_destroy_object(root);
 
     /* Our matrix: */
     root = cf_json_create_array();
@@ -315,10 +179,10 @@ static struct cf_json* create_objects(void)
     /* cJSON_ReplaceItemInArray(root, 1, cJSON_CreateString("Replacement")); */
 
     if (print_preallocated(root) != 0) {
-        cf_json_delete(root);
+        cf_json_destroy_object(root);
         exit(EXIT_FAILURE);
     }
-    cf_json_delete(root);
+    cf_json_destroy_object(root);
 
     /* Our "gallery" item: */
     root = cf_json_create_object();
@@ -333,10 +197,10 @@ static struct cf_json* create_objects(void)
     cf_json_add_item_to_object(img, "IDs", cf_json_create_int_array(ids, 4));
 
     if (print_preallocated(root) != 0) {
-        cf_json_delete(root);
+        cf_json_destroy_object(root);
         exit(EXIT_FAILURE);
     }
-    cf_json_delete(root);
+    cf_json_destroy_object(root);
 
     /* Our array of "records": */
     root = cf_json_create_array();
@@ -356,45 +220,51 @@ static struct cf_json* create_objects(void)
     /* cJSON_ReplaceItemInObject(cJSON_GetArrayItem(root, 1), "City", cJSON_CreateIntArray(ids, 4)); */
 
     if (print_preallocated(root) != 0) {
-        cf_json_delete(root);
+        cf_json_destroy_object(root);
         exit(EXIT_FAILURE);
     }
-    cf_json_delete(root);
+    cf_json_destroy_object(root);
 
     root = cf_json_create_object();
     cf_json_add_number_to_object(root, "number", 1.0 / zero);
 
     if (print_preallocated(root) != 0) {
-        cf_json_delete(root);
+        cf_json_destroy_object(root);
         exit(EXIT_FAILURE);
     }
     
     return root;
 }
 
-int main(void)
-{
 
+static void json_test_case(cf_test* tc){
     /* Now some samplecode for building objects concisely: */
     struct cf_json* json = create_objects();
     struct cf_json* item = NULL;
 
     cf_json_add_number_to_object(json,"test_num1",123);
+    CF_ASSERT(tc,NULL,cf_json_get_int(json,"test_num1",NULL) == 123);
     printf("test_num1=%d\n",cf_json_get_int(json,"test_num1",NULL));
 
     cf_json_add_number_to_object(json,"test_num2",222);
     item = cf_json_get_item(json,"test_num2"); 
+    CF_ASSERT(tc,NULL,cf_json_to_int(item) == 222);
     printf("test_num2=%d\n",cf_json_to_int(item));
     
     cf_json_add_string_to_object(json,"test_str1","hi");
+    CF_ASSERT_STR_EQUALS(tc,NULL,"hi",cf_json_get_string(json,"test_str1",NULL));
     printf("test_str1=%s\n",cf_json_get_string(json,"test_str1",NULL));
 
     cf_json_add_string_to_object(json,"test_str2","hello");
     item = cf_json_get_item(json, "test_str2");
+    CF_ASSERT_STR_EQUALS(tc,NULL,"hello",cf_json_get_string(json,"test_str2",NULL));
     printf("test_str2=%s\n",cf_json_to_string(item));
 
-    cf_json_delete(json);
-    return 0;
+    CF_ASSERT(tc,"root has test_str2",cf_json_contains(json,"test_str2"));
+    cf_json_destroy_object(json);
 }
-
-#endif//CF_JSON_TEST
+cf_suite* get_json_test_suite(){
+    cf_suite* suite =  cf_suite_create();
+    cf_suite_add_test(suite,cf_test_create("json_test_case",json_test_case));
+    return suite;
+}

@@ -9,6 +9,7 @@ typedef enum cf_log_level{
     CF_LOG_QUIET,
     CF_LOG_ERROR,
     CF_LOG_DEBUG,
+    CF_LOG_WARN,
     CF_LOG_INFO
 }cf_log_level;
 typedef struct cf_logger cf_logger;

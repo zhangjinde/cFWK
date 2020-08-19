@@ -15,14 +15,13 @@ SET(LWS_OPENSSL_LIBRARIES  "/opt/hisi-linux/x86-arm/arm-hisiv500-linux/target/li
 #SET(ZLIB_LIBRARY "${TOOLCHAIN_DIR}/target/lib")
 #SET(ZLIB_INCLUDE_DIR "${TOOLCHAIN_DIR}/target/include")
 
-message( ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" )
-message( "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" )
+message( "=============arm-hisiv500-linux======================" )
 option(LWS_WITH_MINIMAL_EXAMPLES "Also build the normally standalone minimal examples, for QA" ON)
 set(CMAKE_CXX_COMPILER arm-hisiv500-linux-g++)
 set(CMAKE_C_COMPILER   arm-hisiv500-linux-gcc)
 set(GNU_FLAGS "-mfpu=vfp -fPIC")
 set(CMAKE_CXX_FLAGS "${GNU_FLAGS} ")
-set(CMAKE_C_FLAGS "${GNU_FLAGS}  ")
+set(CMAKE_C_FLAGS "-std=gnu99 ${GNU_FLAGS}  ")
 #从来不在指定目录下查找工具程序
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 #只在指定目录下查找库文件

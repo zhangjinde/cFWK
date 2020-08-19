@@ -12,14 +12,14 @@
 #define SOCKET_BUFFER_SIZE (1024*128)
 
 static int socket_run(cf_socket* cf_sock_server);
-static int socket_write(cf_socket* sock,uint8_t* buf,size_t n);
+static int socket_write(cf_socket* sock,const uint8_t* buf,size_t n);
 static const cf_socket_inf sock_inf = {
     .run = socket_run,
     .write = socket_write
 };
 
 static int socket_run(cf_socket* cf_sock_server){
-    int sock = (int)(uint64_t)cf_sock_server->instance;
+    int sock = (int)(uintptr_t)cf_sock_server->instance;
     struct cf_list* cli_list = cf_list_create(NULL);
     int max_fd = sock;
     while(true){
@@ -27,7 +27,7 @@ static int socket_run(cf_socket* cf_sock_server){
         FD_ZERO(&r_set);
         FD_SET(sock,&r_set);
         for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter);cf_iterator_next(&iter)){
-            int sock_cli = (int)(uint64_t)((cf_socket*)cf_iterator_get(&iter))->instance;
+            int sock_cli = (int)(uintptr_t)((cf_socket*)cf_iterator_get(&iter))->instance;
             FD_SET(sock_cli,&r_set);
         }
         int nready = select(max_fd+1,&r_set,NULL,NULL,NULL);
@@ -38,7 +38,7 @@ static int socket_run(cf_socket* cf_sock_server){
             int sock_cli = accept(sock, NULL,NULL);
             if(cf_sock_server->on_new_socket){
                 cf_sock_cli = cf_allocator_simple_alloc(sizeof(cf_socket));
-                cf_sock_cli->instance = (void*)(uint64_t)sock_cli;
+                cf_sock_cli->instance = (void*)(uintptr_t)sock_cli;
                 cf_sock_cli->inf = &sock_inf;
                 cf_sock_server->on_new_socket(cf_sock_server,cf_sock_cli);
                 cf_list_push(cli_list,(void*)cf_sock_cli);
@@ -52,7 +52,7 @@ static int socket_run(cf_socket* cf_sock_server){
         }
         for(struct cf_iterator iter = cf_list_begin(cli_list);!cf_iterator_is_end(&iter) && nready > 0;cf_iterator_next(&iter)){
             cf_socket* cf_sock_cli = (cf_socket*)cf_iterator_get(&iter);
-            int sock_cli = (int)(uint64_t)cf_sock_cli->instance;
+            int sock_cli = (int)(uintptr_t)cf_sock_cli->instance;
             if(FD_ISSET(sock_cli,&r_set))
             {
                 uint8_t buffer[SOCKET_BUFFER_SIZE];
@@ -80,8 +80,8 @@ static int socket_run(cf_socket* cf_sock_server){
 //         max_fd = sock_cli;
 
 // }
-static int socket_write(cf_socket* sock,uint8_t* buf,size_t n){
-    write((int)(uint64_t)sock->instance,buf,n);
+static int socket_write(cf_socket* sock,const uint8_t* buf,size_t n){
+    write((int)(uintptr_t)sock->instance,buf,n);
 }
 
 cf_socket* cf_tcp_socket_create_linux(uint16_t port){
@@ -101,7 +101,7 @@ cf_socket* cf_tcp_socket_create_linux(uint16_t port){
     if(ret == -1)
         goto end2;
     listen(sock, 10);
-    cf_sock->instance = (void*)(uint64_t)sock;
+    cf_sock->instance = (void*)(uintptr_t)sock;
     cf_sock->inf = &sock_inf;
     return cf_sock;
 end2:

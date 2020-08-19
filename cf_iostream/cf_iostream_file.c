@@ -77,7 +77,7 @@ cf_iostream* cf_iostream_from_file(const char* file_name,uint32_t flags){
     cf_iostream_file* stream = (cf_iostream_file*)cf_allocator_simple_alloc(sizeof(cf_iostream_file));
     if(stream){
         stream->m_flags = flags;
-        stream->m_filePath = cf_string_create_frome_c_str(file_name);
+        stream->m_filePath = cf_string_create_from_cstr(file_name);
         if(stream->m_filePath == NULL){
             cf_allocator_simple_free(stream);
             return NULL;

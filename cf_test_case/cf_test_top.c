@@ -7,12 +7,14 @@
 #include "cf_sha1_test.h"
 #include "cf_base64_test.h"
 #include "cf_websocket_test.h"
+#include "cf_json_test.h"
 
 int main(){
     cf_suite* suite = cf_suite_create();
     cf_suite_add_suite(suite,get_module_test_suite());
     cf_suite_add_suite(suite,get_list_test_suite());
     cf_suite_add_suite(suite,get_factory_test_suite());
+    cf_suite_add_suite(suite,get_json_test_suite());
     cf_suite_add_suite(suite,get_sha1_test_suite());
     cf_suite_add_suite(suite,get_base64_test_suite());
     cf_suite_add_suite(suite,get_websocket_test_suite());

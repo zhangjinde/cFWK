@@ -124,7 +124,7 @@ void cf_async_queue_push(struct cf_async_queue* queue,void* item){
 void cf_async_queue_delete(struct cf_async_queue* queue){
     pthread_mutex_destroy(&queue->m_mutex);
     pthread_cond_destroy(&queue->m_condition);
-    cf_list_delete(queue->m_queue);
+    cf_list_destroy(queue->m_queue);
     cf_allocator_simple_free(queue);
 }
 

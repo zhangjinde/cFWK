@@ -7,7 +7,7 @@ int cf_base64_encode(const uint8_t* str,uint8_t* code,size_t code_len){
     uint8_t* _code = base64_encode(str);
     strncpy(code,_code,code_len-1);
     free(_code);
-    code[code_len-1] = 0;
+    code[code_len-1] = '\0';
     return CF_OK;
 }
 int cf_base64_decode(const uint8_t* code,uint8_t* str,size_t str_len){
