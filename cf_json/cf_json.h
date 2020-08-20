@@ -5,14 +5,10 @@
 extern "C"{
 #endif
 
-struct cf_json;
+typedef struct cf_json cf_json;
 struct cf_json* cf_json_load(const char* str);
 struct cf_json* cf_json_create_object();
 struct cf_json* cf_json_create_string(const char *string);
-
-struct cf_json* cf_json_create_int_array(const int *numbers, int count);
-struct  cf_json* cf_json_create_string_array(const char *const *strings, int count);
-int cf_json_add_item_to_array(struct  cf_json *array, struct  cf_json *item);
 
 void cf_json_destroy_object(struct cf_json* item);
 struct cf_json* cf_json_detach_item(struct cf_json* parent,const char* name);
@@ -29,7 +25,13 @@ char* cf_json_to_string(struct cf_json *object);
 int cf_json_get_int(struct cf_json *object, const char * const name,int* err);
 char* cf_json_get_string(struct cf_json *object, const char * const name,int* err);
 int cf_json_to_int(struct cf_json *object);
+
 struct  cf_json* cf_json_create_array(void);
+struct cf_json* cf_json_create_int_array(const int *numbers, int count);
+struct  cf_json* cf_json_create_string_array(const char *const *strings, int count);
+int cf_json_add_item_to_array(struct  cf_json *array, struct  cf_json *item);
+int cf_json_get_array_size(struct  cf_json *array);
+cf_json* cf_json_get_item_from_array(struct  cf_json *array, int which);
 
 bool cf_json_contains(struct cf_json *object,const char* key);
 #ifdef __cplusplus

@@ -239,11 +239,12 @@ static struct cf_json* create_objects(void)
 
 static void json_test_case(cf_test* tc){
     /* Now some samplecode for building objects concisely: */
+
     struct cf_json* json = create_objects();
     struct cf_json* item = NULL;
 
     cf_json_add_number_to_object(json,"test_num1",123);
-    CF_ASSERT(tc,NULL,cf_json_get_int(json,"test_num1",NULL) == 123);
+    CF_ASSERT(tc,NULL,cf_json_get_int(json,"test_num1",NULL) == 124);
     //printf("test_num1=%d\n",cf_json_get_int(json,"test_num1",NULL));
 
     cf_json_add_number_to_object(json,"test_num2",222);

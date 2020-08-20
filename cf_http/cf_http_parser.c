@@ -30,6 +30,7 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
     //     printf("http request text is too length.\n");
     //     return NULL;
     // }
+    
     *parsed_len = 0;
     uint8_t str_buffer[2048];
     size_t str_buff_pos = 0;
@@ -55,7 +56,6 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
     memcpy(resource,s,pos-(s-line)-1);
     resource[pos-(s-line)-1] = '\0';
     str_buff_pos += strlen(resource)+1;
-
     while(*text != '\r'){
         pos = 0;
         text = take_line(text,len-(text-buffer),line,sizeof(line),&take_len);
@@ -66,10 +66,9 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
         char* key = line;
         while(line[pos++] != ':');
         line[pos-1] = '\0';
-        while(line[pos++] != ' ');
+        while(line[pos++] == ' ');
+        pos--;
         char* val = line+pos;
-        while(line[pos++] != '\n');
-        line[pos-2] = '\0';
         if(0 == strcmp(key , "Upgrade")){
             upgrade = str_buffer + str_buff_pos;
             strcpy(upgrade,val);

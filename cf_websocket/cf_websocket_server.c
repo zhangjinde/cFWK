@@ -113,7 +113,7 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
         uint8_t mask_key[4];
         memcpy(mask_key,buffer,4);
         buffer += 4;
-        uint8_t data[2048];
+        uint8_t data[1024*64];
         for(int i =0;i < data_len;i++){
             data[i] = buffer[i] ^ mask_key[i%4];
         }
@@ -127,7 +127,6 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
             uint8_t close_buf[2] = {0x88,0x00};
             cf_socket_write(ws_sock->sock,close_buf,sizeof(close_buf));
         }
-
     }
 }
 

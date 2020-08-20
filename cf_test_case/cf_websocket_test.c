@@ -15,13 +15,13 @@ static void on_cli_read(cf_websocket* cli,const char* buf,uint64_t n){
     sprintf(buffer,"hello %s\r\n",buf);
     cf_websocket_write_text(cli,buffer,strlen(buffer));
 }
+
 void test_websocket_case(cf_test* tc){
     cf_websocket_server* server = cf_websocket_server_create(8800);
     cf_websocket_server_set_on_connect_callback(server,on_new_websocket);
     cf_websocket_server_set_on_disconnect_callback(server,on_disconnect);
     cf_websocket_server_set_on_read_text_callback(server,on_cli_read);
     cf_websocket_server_run(server);
-
     return;
 }
 cf_suite* get_websocket_test_suite(){
