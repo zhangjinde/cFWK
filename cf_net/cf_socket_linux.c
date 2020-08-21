@@ -63,6 +63,7 @@ static int socket_run(cf_socket* cf_sock_server){
             {
                 uint8_t buffer[SOCKET_BUFFER_SIZE];
                 ssize_t count = read(sock_cli,buffer,SOCKET_BUFFER_SIZE);
+                buffer[count] = '\0';
                 if(count <= 0)
                 {
                     close(sock_cli);

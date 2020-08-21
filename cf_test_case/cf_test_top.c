@@ -17,7 +17,7 @@ int main(){
     cf_suite_add_suite(suite,get_json_test_suite());
     cf_suite_add_suite(suite,get_sha1_test_suite());
     cf_suite_add_suite(suite,get_base64_test_suite());
-    //cf_suite_add_suite(suite,get_websocket_test_suite());
+    cf_suite_add_suite(suite,get_websocket_test_suite());
     cf_suite_run(suite);
     printf("%s",cf_suite_msg(suite));
     cf_suite_destroy(suite);

@@ -5,6 +5,7 @@
 #include <string.h>
 static void on_new_websocket(cf_websocket_server* server,cf_websocket* new_cli){
     printf("connect new cli[%p]\n",new_cli);
+    //cf_websocket_write_text(new_cli,"welcome!",strlen("welcome!"));
 }
 static void on_disconnect(cf_websocket_server* server,cf_websocket* cli){
     printf("disconnect cli[%p]\n",cli);

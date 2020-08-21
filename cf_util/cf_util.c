@@ -34,6 +34,19 @@ void cf_print_arr(const char* title,const uint8_t* buf,size_t n){
     cf_log(NULL,CF_LOG_QUIET,"%s",str);
 }
 
+char* strlwr(char* str){
+    if(str == NULL)
+        return str;
+	char *p = str;
+	while('\0' != *p)
+	{
+		if((*p>='A')&&(*p<='Z'))
+			*p+='a'-'A';
+		p++;
+	}
+	return str;
+}
+
 void cf_usleep(uint64_t ms){
     usleep(ms);
 }

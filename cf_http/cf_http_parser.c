@@ -1,6 +1,7 @@
 #include "cf_http_parser.h"
 #include "cf_collection/cf_string.h"
 #include "cf_allocator/cf_allocator_simple.h"
+#include "cf_util/cf_util.h"
 #include <stdio.h>
 #include <string.h>
 typedef struct cf_http_request{
@@ -24,12 +25,6 @@ static const char* take_line(const char* text,size_t text_len,char* line,size_t 
 }
 
 cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_len){
-    // char text_buffer[2048];
-    // 
-    // if(len > sizeof(text_buffer)){
-    //     printf("http request text is too length.\n");
-    //     return NULL;
-    // }
     
     *parsed_len = 0;
     uint8_t str_buffer[2048];
@@ -66,15 +61,16 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
         char* key = line;
         while(line[pos++] != ':');
         line[pos-1] = '\0';
+        strlwr(key);
         while(line[pos++] == ' ');
         pos--;
         char* val = line+pos;
-        if(0 == strcmp(key , "Upgrade")){
+        if(0 == strcmp(key , "upgrade")){
             upgrade = str_buffer + str_buff_pos;
             strcpy(upgrade,val);
             str_buff_pos += strlen(upgrade)+1;
         }
-        else if(0 == strcmp(key , "Sec-WebSocket-Key")){
+        else if(0 == strcmp(key , "sec-websocket-key")){
             ws_key = str_buffer + str_buff_pos;
             strcpy(ws_key,val);
             str_buff_pos += strlen(ws_key)+1;
