@@ -92,7 +92,9 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
     else{
         memcpy(ws_sock->recv_buffer+ws_sock->recv_len,buffer,len);
         ws_sock->recv_len+=len;
-        uint8_t* pBuf = ws_sock->recv_buffer;
+
+        while(ws_sock->recv_len > 0){
+            uint8_t* pBuf = ws_sock->recv_buffer;
         size_t buf_len = ws_sock->recv_len;
         cf_print_arr("ws recv: ",pBuf,buf_len);
         uint8_t code = pBuf[0] & 0x0f;
@@ -122,7 +124,7 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
         }
         if(  buf_len < data_len+protocol_head_len)
         {
-            return;
+            break;
         }
         uint8_t mask_key[4];
         memcpy(mask_key,pBuf,4);
@@ -142,10 +144,11 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
             uint8_t close_buf[2] = {0x88,0x00};
             cf_socket_write(ws_sock->sock,close_buf,sizeof(close_buf));
         }
-        pBuf = ws_sock->recv_buffer+ws_sock->recv_len;
+        pBuf = ws_sock->recv_buffer+data_len+protocol_head_len;
         ws_sock->recv_len -= data_len+protocol_head_len;
         if(ws_sock->recv_len > 0)
             memcpy(ws_sock->recv_buffer,pBuf,ws_sock->recv_len); // 如果处理完该包，websocket缓存还有数据，则数据前移， 就地拷贝可能有问题，待观察。
+        }
     }
 }
 

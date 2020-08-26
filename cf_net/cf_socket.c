@@ -3,6 +3,7 @@
 #include "cf_allocator/cf_allocator_simple.h"
 #include "cf_socket_linux.h"
 #include "cf_socket_internal.h"
+#include <stdio.h>
 
 // typedef struct cf_socket {
 //     cf_socket_priv* priv;
@@ -30,7 +31,8 @@ void cf_socket_set_on_read_callback(cf_socket* sock,void (*on_cli_read)(cf_socke
     sock->on_client_read = on_cli_read;
 }
 int cf_socket_write(cf_socket* sock,const uint8_t* buf,size_t n){
-    return sock->inf->write(sock,buf,n);
+    int ret = sock->inf->write(sock,buf,n);
+    return ret;
 }
 void cf_socket_set_user_data(cf_socket* sock,void* user_data){
     sock->user_data = user_data;
