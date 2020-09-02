@@ -100,7 +100,7 @@ static int socket_run(cf_socket* cf_sock_server){
 
 // }
 static int socket_write(cf_socket* sock,const uint8_t* buf,size_t n){
-    write((int)(uintptr_t)sock->instance,buf,n);
+    return write((int)(uintptr_t)sock->instance,buf,n);
 }
 
 cf_socket* cf_tcp_socket_create_linux(uint16_t port){

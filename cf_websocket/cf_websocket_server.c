@@ -160,7 +160,7 @@ int cf_websocket_server_run(cf_websocket_server* server){
     return CF_OK;
 }
 static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_t code){
-    uint8_t buffer[1024*1024];
+    uint8_t buffer[1024*1024*2];
     buffer[0] = 0x80 | code;
     uint8_t* payload = NULL;
     if(n < 126){
@@ -188,7 +188,18 @@ static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_
         payload = buffer + 10;
     }
     memcpy(payload,buf,n);
-    return cf_socket_write(ws->sock,buffer,n+payload-buffer); 
+    int total_len = n+payload-buffer;
+    int remain_len = total_len;
+    while(remain_len > 0){
+        int wt_len = cf_socket_write(ws->sock,buffer,remain_len);
+        if(wt_len<0 || (remain_len>0 && wt_len == 0))
+        {
+            total_len = -1;
+            break;
+        }
+        remain_len-= wt_len;
+    }
+    return total_len;
 }
 int cf_websocket_write_text(cf_websocket* ws,const char* buf,uint64_t n){
     return cf_websocket_write(ws,buf,n,1);
