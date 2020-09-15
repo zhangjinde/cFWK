@@ -46,7 +46,6 @@ static void _string_resize(_string* s, int size){
 }
 static void _string_clear(_string* s)
 {
-	int length;
 	s->len = 0;
     memset(s->buff,0,s->size);
 }

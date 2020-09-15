@@ -27,11 +27,11 @@ static const char* take_line(const char* text,size_t text_len,char* line,size_t 
 cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_len){
     
     *parsed_len = 0;
-    uint8_t str_buffer[2048];
+    char str_buffer[2048];
     size_t str_buff_pos = 0;
     char line[1024];
     size_t take_len = 0;
-    const uint8_t* text = take_line(buffer,len,line,sizeof(line),&take_len);
+    const char* text = take_line((char*)buffer,len,line,sizeof(line),&take_len);
     if(take_len == 0)
     {
         return NULL;
@@ -53,7 +53,7 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
     str_buff_pos += strlen(resource)+1;
     while(*text != '\r'){
         pos = 0;
-        text = take_line(text,len-(text-buffer),line,sizeof(line),&take_len);
+        text = take_line(text,len-(text-(char*)buffer),line,sizeof(line),&take_len);
         if(take_len == 0)
         {
             return NULL;
@@ -82,8 +82,8 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
         }
 
     }
-    while( text - buffer < len &&  *text++ != '\n');
-    *parsed_len = text - buffer;
+    while( text - (char*)buffer < len &&  *text++ != '\n');
+    *parsed_len = text - (char*)buffer;
     cf_http_request* request = cf_allocator_simple_alloc(sizeof(cf_http_request));
     request->method = cf_string_create_from_cstr(method);
     request->upgrade = cf_string_create_from_cstr(upgrade);

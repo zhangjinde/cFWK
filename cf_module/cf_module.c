@@ -27,6 +27,7 @@ static cf_mod* cf_find_mod(const char* mod_name){
         cf_mod* mod = cf_iterator_get(&it);
         return mod;
     }
+    return NULL;
 }
 void cf_mod_setup(void){
     for(cf_iterator it = cf_mod_begin();!cf_iterator_is_end(&it);cf_iterator_next(&it)){

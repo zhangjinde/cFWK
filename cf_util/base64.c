@@ -9,10 +9,10 @@ uint8_t *base64_encode(const uint8_t *str)
     uint8_t *res;  
     int i,j;  
 //定义base64编码表  
-    uint8_t *base64_table="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";  
+    const char *base64_table="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";  
   
 //计算经过base64编码后的字符串长度  
-    str_len=strlen(str);  
+    str_len=strlen((char*)str);  
     if(str_len % 3 == 0)  
         len=str_len/3*4;  
     else  
@@ -66,11 +66,11 @@ uint8_t *base64_decode(const uint8_t *code)
     int i,j;  
   
 //计算解码后的字符串长度  
-    len=strlen(code);  
+    len=strlen((char*)code);  
 //判断编码后的字符串后是否有=  
-    if(strstr(code,"=="))  
+    if(strstr((char*)code,"=="))  
         str_len=len/4*3-2;  
-    else if(strstr(code,"="))  
+    else if(strstr((char*)code,"="))  
         str_len=len/4*3-1;  
     else  
         str_len=len/4*3;  

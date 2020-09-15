@@ -22,6 +22,7 @@ cf_element_class* cf_element_class_create(const char* class_name){
     cf_element_class* e_class = cf_allocator_simple_alloc(sizeof(cf_element_class));
     e_class->name = cf_string_create_from_cstr(class_name);
     e_class->attr_map = cf_hash_create(cf_hash_str_hash,cf_hash_str_equal,cf_allocator_simple_free,NULL);
+    return e_class;
 }
 void cf_element_class_set_constructor(cf_element_class* elem_class,cf_element_constructor constructor){
     elem_class->constructor = constructor;

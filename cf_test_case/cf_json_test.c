@@ -18,7 +18,7 @@ struct record
     const char *country;
 };
 
-
+#if 0
 /* Create a bunch of objects as demonstration. */
 static int print_preallocated(struct cf_json *root)
 {
@@ -83,6 +83,7 @@ static int print_preallocated(struct cf_json *root)
     cf_allocator_simple_free(buf);
     return 0;
 }
+#endif
 
 /* Create a bunch of objects as demonstration. */
 static struct cf_json* create_objects(void)

@@ -6,12 +6,12 @@
 #include <string.h>
 static void test_base64_case(cf_test* tc){
     uint8_t res[128];
-    cf_base64_encode("a123456",res,sizeof(res));
+    cf_base64_encode((uint8_t*)"a123456",res,sizeof(res));
     //printf("a123456->(base64)->%s\n",res);
-    CF_ASSERT(tc,NULL,strcmp(res,"YTEyMzQ1Ng==") == 0);
-    cf_base64_decode("YTEyMzQ1Ng==",res,sizeof(res));
+    CF_ASSERT(tc,NULL,strcmp((char*)res,"YTEyMzQ1Ng==") == 0);
+    cf_base64_decode((uint8_t*)"YTEyMzQ1Ng==",res,sizeof(res));
     //printf("%s<-(base64)<-YTEyMzQ1Ng==\n",res);
-    CF_ASSERT(tc,NULL,strcmp(res,"a123456") == 0);
+    CF_ASSERT(tc,NULL,strcmp((char*)res,"a123456") == 0);
     return;
 }
 

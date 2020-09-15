@@ -78,13 +78,13 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
                                 memcpy(accept_key,key,strlen(key));
                                 strncat(accept_key,"258EAFA5-E914-47DA-95CA-C5AB0DC85B11",strlen("258EAFA5-E914-47DA-95CA-C5AB0DC85B11")+1);
                                 uint8_t sha1[21];
-                                cf_sha1_generate(accept_key,sha1,strlen(accept_key));
+                                cf_sha1_generate((uint8_t*)accept_key,sha1,strlen(accept_key));
                                 sha1[20] = '\0';
                                 uint8_t sha1_base64[64];
                                 cf_base64_encode(sha1,sha1_base64,sizeof(sha1_base64));
                                 char accept_buffer[256];
                                 sprintf(accept_buffer,wb_accept,sha1_base64,cf_http_request_host(request),cf_http_request_resource(request));
-                                cf_socket_write(client,accept_buffer,strlen(accept_buffer));
+                                cf_socket_write(client,(uint8_t*)accept_buffer,strlen(accept_buffer));
                                 ws_sock->state = CONNECTED;
             }
         }
@@ -136,7 +136,7 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
         }
         data[data_len] = '\0';
         if(code == 1 && ws_sock->server->on_read_text)
-            ws_sock->server->on_read_text(ws_sock,data,data_len);
+            ws_sock->server->on_read_text(ws_sock,(char*)data,data_len);
         else if(code == 2 && ws_sock->server->on_read_binary)
             ws_sock->server->on_read_binary(ws_sock,data,data_len);
         else if(code == 8)//客户端请求断开连接
@@ -160,7 +160,7 @@ int cf_websocket_server_run(cf_websocket_server* server){
     return CF_OK;
 }
 static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_t code){
-    uint8_t buffer[1024*1024*2];
+    uint8_t* buffer = cf_allocator_simple_alloc(n+32);
     buffer[0] = 0x80 | code;
     uint8_t* payload = NULL;
     if(n < 126){
@@ -182,7 +182,7 @@ static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_
         buffer[4] = (n >> 40) & 0xff;
         buffer[5] = (n >> 32) & 0xff;
         buffer[6] = (n >> 24) & 0xff;
-        buffer[7] = (n >> 16) & 0xff ;
+        buffer[7] = (n >> 16) & 0xff;
         buffer[8] = (n >> 8) & 0xff;
         buffer[9] = n & 0xff;
         payload = buffer + 10;
@@ -199,13 +199,15 @@ static int cf_websocket_write(cf_websocket* ws,const char* buf,uint64_t n,uint8_
         }
         remain_len-= wt_len;
     }
+    cf_allocator_simple_free(buffer);
+    buffer = NULL;
     return total_len;
 }
 int cf_websocket_write_text(cf_websocket* ws,const char* buf,uint64_t n){
     return cf_websocket_write(ws,buf,n,1);
 }
 int cf_websocket_write_binary(cf_websocket* ws,const uint8_t* buf,uint64_t n){
-    return cf_websocket_write(ws,buf,n,2);
+    return cf_websocket_write(ws,(char*)buf,n,2);
 }
 void cf_websocket_server_set_on_read_text_callback(cf_websocket_server* server,void (*on_cli_read_text)(cf_websocket*,const char*,uint64_t )){
     server->on_read_text = on_cli_read_text;

@@ -12,7 +12,7 @@ static void on_disconnect(cf_websocket_server* server,cf_websocket* cli){
 }
 static void on_cli_read(cf_websocket* cli,const char* buf,uint64_t n){
     printf("data=%s\n",buf);
-    uint8_t buffer[256];
+    char buffer[256];
     sprintf(buffer,"hello %s\r\n",buf);
     cf_websocket_write_text(cli,buffer,strlen(buffer));
 }
