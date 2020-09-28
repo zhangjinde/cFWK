@@ -57,12 +57,20 @@ static void on_disconnect(cf_socket* server,cf_socket* cli){
     cf_allocator_simple_free(websock);
     return;
 }
+
+				  //
+                  //
 static const char *wb_accept = "HTTP/1.1 101 Switching Protocols\r\n" \
-				  "Upgrade:websocket\r\n" \
+				  "Upgrade: websocket\r\n" \
 				  "Connection: Upgrade\r\n" \
 				  "Sec-WebSocket-Accept: %s\r\n" \
-				  "WebSocket-Location: ws://%s%s\r\n" \
-				  "WebSocket-Protocol:chat\r\n\r\n";
+                  "WebSocket-Protocol:chat\r\n"  \
+                  "WebSocket-Location: ws://%s%s\r\n" \
+				  "Server: Echo Server\r\n" \
+                  "Access-Control-Allow-Credentials: false\r\n" \
+                  "Access-Control-Allow-Methods: GET\r\n" \
+                  "Access-Control-Allow-Headers: content-type\r\n" \
+                  "\r\n";
 
 static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
     cf_websocket* ws_sock = cf_socket_get_user_data(client);

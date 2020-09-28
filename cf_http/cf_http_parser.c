@@ -75,7 +75,7 @@ cf_http_request* cf_http_parse(const uint8_t* buffer,size_t len,size_t* parsed_l
             strcpy(ws_key,val);
             str_buff_pos += strlen(ws_key)+1;
         }
-        else if(0 == strcmp(key , "Host")){
+        else if(0 == strcmp(key , "host")){
             host = str_buffer + str_buff_pos;
             strcpy(host,val);
             str_buff_pos += strlen(host)+1;

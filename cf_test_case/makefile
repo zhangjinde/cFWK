@@ -14,9 +14,14 @@ src=  $(CFWK_DIR)/cf_test/cf_test.c \
 	  $(CFWK_DIR)/cf_factory/cf_element.c \
 	  $(CFWK_DIR)/cf_factory/cf_pad.c \
 	  $(CFWK_DIR)/cf_factory/cf_element_class.c \
+	  $(CFWK_DIR)/cf_http/cf_http_parser.c \
+	  $(CFWK_DIR)/cf_net/cf_socket.c \
+	  $(CFWK_DIR)/cf_net/cf_socket_linux.c \
+	  $(CFWK_DIR)/cf_websocket/cf_websocket_server.c \
 	  $(CFWK_DIR)/cf_test_case/cf_list_test.c \
 	  $(CFWK_DIR)/cf_test_case/cf_module_test.c \
 	  $(CFWK_DIR)/cf_test_case/cf_factory_test.c \
+	  $(CFWK_DIR)/cf_test_case/cf_websocket_test.c \
 	  $(CFWK_DIR)/cf_test_case/cf_test_top.c
 
 obj := $(src:c=o)
