@@ -104,7 +104,7 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
         while(ws_sock->recv_len > 0){
             uint8_t* pBuf = ws_sock->recv_buffer;
         size_t buf_len = ws_sock->recv_len;
-        cf_print_arr("ws recv: ",pBuf,buf_len);
+        //cf_print_arr("ws recv: ",pBuf,buf_len);
         uint8_t code = pBuf[0] & 0x0f;
         uint64_t data_len = pBuf[1] & 0x7f;
         int protocol_head_len = 0;
