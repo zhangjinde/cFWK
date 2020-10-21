@@ -43,8 +43,6 @@ static void on_new_socket(cf_socket* server,cf_socket* new_cli){
     websock->sock = new_cli;
     websock->server = ws_server;
     
-    if(ws_server->on_new_websocket)
-        ws_server->on_new_websocket(ws_server,websock);
     cf_socket_set_user_data(new_cli,websock);
     return;
 }
@@ -94,6 +92,10 @@ static void on_client_read(cf_socket* client,const uint8_t* buffer,size_t len){
                                 sprintf(accept_buffer,wb_accept,sha1_base64,cf_http_request_host(request),cf_http_request_resource(request));
                                 cf_socket_write(client,(uint8_t*)accept_buffer,strlen(accept_buffer));
                                 ws_sock->state = CONNECTED;
+                                cf_websocket_server* ws_server = cf_websocket_get_server(ws_sock);
+                                if(ws_server->on_new_websocket)
+                                    ws_server->on_new_websocket(ws_server,ws_sock);
+                                
             }
         }
     }
@@ -243,4 +245,9 @@ void cf_websocket_set_user_data(cf_websocket* ws,void* d){
 }
 void* cf_websocket_get_user_data(cf_websocket* ws){
     return ws->data;
+}
+
+
+cf_websocket_server* cf_websocket_get_server(cf_websocket* ws){
+    return ws->server;
 }

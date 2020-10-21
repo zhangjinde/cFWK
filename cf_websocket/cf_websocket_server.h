@@ -23,6 +23,8 @@ void cf_websocket_server_set_on_disconnect_callback(cf_websocket_server* server,
 void cf_websocket_set_user_data(cf_websocket* ,void* );
 void* cf_websocket_get_user_data(cf_websocket* );
 
+cf_websocket_server* cf_websocket_get_server(cf_websocket* );
+
 #ifdef __cplusplus
 }
 #endif
